@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "text": "Sabay tayo.",
+  "phoneme_groups": ["S A", "B A Y", "T A", "Y O"],
+  "vocabulary": ["S", "A", "B", "Y", "T", "O"],
+  "durations_seconds": ["0.18", "0.22", "0.20", "0.40"],
+  "frame_rate_hz": 50,
+  "expected_frames": 50,
+  "timing_mode": "cumulative_half_up"
+}

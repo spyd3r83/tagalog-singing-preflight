@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tagalog-singing-preflight"
+version = "0.1.0"
+description = "Offline mechanical checks for singing text, phonemes, timing, and voicing."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/spyd3r83/tagalog-singing-preflight"
+Issues = "https://github.com/spyd3r83/tagalog-singing-preflight/issues"
+
+[project.scripts]
+tagalog-singing-preflight = "tagalog_singing_preflight.__main__:main"
+
+[tool.setuptools]
+packages = ["tagalog_singing_preflight"]

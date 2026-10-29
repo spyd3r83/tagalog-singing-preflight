@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "text": "Maliit na halimbawa.",
+  "phoneme_groups": ["A", "A", "A", "A", "A", "A", "A", "A", "A", "A"],
+  "vocabulary": ["A"],
+  "durations_seconds": ["0.1", "0.1", "0.1", "0.1", "0.1", "0.1", "0.1", "0.1", "0.1", "0.1"],
+  "frame_rate_hz": 50,
+  "expected_frames": 50,
+  "timing_mode": "legacy_sum_float_floor"
+}

@@ -1,0 +1,457 @@
+{
+  "schema_version": 1,
+  "verified_at": "2026-10-29",
+  "title": "Tagalog singing preflight resource catalog",
+  "scope": "Original link metadata only. Resource kinds, reported sizes and permissions remain separate. No audio, lyrics, dictionary contents, model weights or third-party code are redistributed.",
+  "verification_limits": "Primary public metadata and terms were read. This is not a legal clearance, native-language review, listening test, model benchmark or exhaustive inventory. Recheck sources before use.",
+  "resources": [
+    {
+      "id": "liee-filipino-singing",
+      "name": "LIEE Filipino Singing Corpus",
+      "kind": "singing_corpus",
+      "language": [
+        "Filipino"
+      ],
+      "primary_url": "https://github.com/julieraptor/LIEE-Filipino-Singing-Corpus-for-Singing-Voice-Synthesis",
+      "verified_at": "2026-10-29",
+      "summary": "One performer’s Filipino singing recordings prepared for vocal synthesis.",
+      "declared_size": {
+        "duration_seconds": 1060,
+        "display": "17 min 40 sec",
+        "sample_rate_hz": 44100,
+        "bit_depth": 16,
+        "basis": "creator_report"
+      },
+      "annotations": [
+        "WAV audio",
+        "LAB labels",
+        "DiffSinger DS metadata",
+        "Language-prefixed phones"
+      ],
+      "license": {
+        "identifier": "Custom creator terms",
+        "source_url": "https://github.com/julieraptor/LIEE-Filipino-Singing-Corpus-for-Singing-Voice-Synthesis#terms-and-conditions",
+        "attribution": "Credit LIEE; voicer and labeller: Julilyn Ng (julieraptor).",
+        "training_use": "Permits credited parallel learning for multispeaker DiffSinger and other vocal synthesis systems. Voice changers are prohibited.",
+        "redistribution": "Raw corpus redistribution prohibited; distributing a recreated LIEE bank requires written permission.",
+        "commercial_use": "Creator permits commercial distribution of synthesis banks using the corpus as parallel material.",
+        "uncertainties": [
+          "These terms do not establish permission for every training method or clear third-party composition rights."
+        ]
+      },
+      "fit": {
+        "pronunciation_frontend": "Useful labeled Filipino phone examples; mapping must match the target model.",
+        "svs_training": "Candidate for the specifically permitted synthesis uses; small single-performer corpus.",
+        "svc_guide": "Not permitted for Diff-SVC, RVC or other voice changers."
+      },
+      "availability": {
+        "release_url": "https://github.com/julieraptor/LIEE-Filipino-Singing-Corpus-for-Singing-Voice-Synthesis/releases/tag/v1.0",
+        "status": "release_asset_metadata_confirmed"
+      },
+      "evidence_status": "creator_report_and_release_metadata; no audio downloaded or listened to"
+    },
+    {
+      "id": "tiny-tagalog",
+      "name": "tiny-tagalog-dataset",
+      "kind": "singing_corpus",
+      "language": [
+        "Tagalog"
+      ],
+      "primary_url": "https://github.com/UtaUtaUtau/tiny-tagalog-dataset",
+      "verified_at": "2026-10-29",
+      "summary": "A masculine-voice singing corpus with segmented and unsegmented release packages.",
+      "declared_size": {
+        "duration_seconds": 2336,
+        "display": "38 min 56 sec",
+        "sample_rate_hz": 44100,
+        "bit_depth": 16,
+        "basis": "creator_report"
+      },
+      "annotations": [
+        "USAP phones with cl replacing q",
+        "SOFA labels manually corrected",
+        "Silence, breath, breathy release and vocal-fry labels"
+      ],
+      "license": {
+        "identifier": "CC-BY-NC-4.0 (dataset); MIT (repository code)",
+        "source_url": "https://github.com/UtaUtaUtau/tiny-tagalog-dataset/blob/main/LICENSE-DATASET",
+        "attribution": "Credit UtaUtaUtau and preserve dataset license notices.",
+        "training_use": "Dataset use is noncommercial by default; evaluate the intended model distribution under those terms.",
+        "redistribution": "Dataset license conditions apply; MIT code licensing does not relicense the recordings.",
+        "commercial_use": "Separate creator permission needed for commercial use.",
+        "uncertainties": [
+          "The song list includes existing compositions; recording-license metadata alone does not clear every composition use."
+        ]
+      },
+      "fit": {
+        "pronunciation_frontend": "Useful phone and label conventions; processed recordings are not a pristine recording baseline.",
+        "svs_training": "Small noncommercial training or alignment candidate, subject to rights checks.",
+        "svc_guide": "No general consent for third-party voice imitation is established."
+      },
+      "availability": {
+        "release_url": "https://github.com/UtaUtaUtau/tiny-tagalog-dataset/releases/tag/v1.0.0",
+        "status": "segmented_and_unsegmented_asset_metadata_confirmed"
+      },
+      "evidence_status": "creator_report_and_release_metadata; no audio downloaded or listened to"
+    },
+    {
+      "id": "diffsinger-filipino-phonemizer",
+      "name": "DiffSinger Filipino Phonemizer",
+      "kind": "pronunciation_frontend",
+      "language": [
+        "Tagalog",
+        "Filipino"
+      ],
+      "primary_url": "https://github.com/julieraptor/Diffsinger-Filipino-Phonemizer",
+      "verified_at": "2026-10-29",
+      "summary": "A Filipino dictionary and OpenUtau phonemizer reference, with spelling, glottal-stop and phone-mapping guidance.",
+      "declared_size": {
+        "word_entries": 24765,
+        "phonemes": 30,
+        "graphemes": 28,
+        "basis": "maintainer_readme"
+      },
+      "annotations": [
+        "Grapheme-to-phone dictionary",
+        "Phone chart",
+        "OpenUtau configuration examples"
+      ],
+      "license": {
+        "identifier": "Unspecified in inspected repository",
+        "source_url": "https://github.com/julieraptor/Diffsinger-Filipino-Phonemizer",
+        "attribution": "julieraptor; README identifies substantial WikiPron sourcing.",
+        "training_use": "Permission unresolved; do not treat public availability as a training grant.",
+        "redistribution": "No dictionary or code is redistributed here.",
+        "commercial_use": "Unresolved.",
+        "uncertainties": [
+          "No explicit license found in repository metadata or file tree at revision 181748bc1cdf6a4422d9ba7d509f3147d7abef0c.",
+          "Upstream dictionary content has separate provenance."
+        ]
+      },
+      "fit": {
+        "pronunciation_frontend": "Relevant conventions, but not a drop-in SoulX Tagalog frontend.",
+        "svs_training": "Text resource, with no singing hours; permission and phone compatibility need resolution.",
+        "svc_guide": "Not audio or a voice reference."
+      },
+      "evidence_status": "maintainer_metadata_confirmed; pronunciation performance unassessed"
+    },
+    {
+      "id": "wikipron-tagalog",
+      "name": "WikiPron Tagalog pronunciation tables",
+      "kind": "pronunciation_lexicon",
+      "language": [
+        "Tagalog"
+      ],
+      "primary_url": "https://github.com/CUNY-CL/wikipron",
+      "verified_at": "2026-10-29",
+      "summary": "Wiktionary-derived word-to-IPA pairs, available as separate broad and narrow Tagalog tables.",
+      "declared_size": {
+        "broad_entries": 28295,
+        "narrow_entries": 33062,
+        "basis": "maintainer_scrape_summary"
+      },
+      "annotations": [
+        "Word and space-segmented IPA pairs",
+        "Latin-script Tagalog",
+        "Broad and narrow tables are alternatives, not disjoint counts"
+      ],
+      "license": {
+        "identifier": "Wiktionary content terms; Apache-2.0 applies to WikiPron code",
+        "source_url": "https://github.com/CUNY-CL/wikipron#license",
+        "attribution": "Cite Lee et al. (2020), WikiPron and underlying Wiktionary contributors as applicable.",
+        "training_use": "Assess the relevant Wiktionary snapshot terms and attribution obligations before reuse.",
+        "redistribution": "Content licensing is separate from the tool’s Apache license.",
+        "commercial_use": "Do not infer permission from the code license; inspect applicable content terms.",
+        "uncertainties": [
+          "Snapshot provenance and share-alike obligations need review for a derived dictionary or model."
+        ]
+      },
+      "fit": {
+        "pronunciation_frontend": "Useful lookup baseline; broad table alone does not provide contextual lexical stress.",
+        "svs_training": "Text-only frontend resource; no audio, notes or singing durations.",
+        "svc_guide": "Not a sung guide."
+      },
+      "table_urls": [
+        "https://github.com/CUNY-CL/wikipron/blob/master/data/scrape/tsv/tgl_latn_broad.tsv",
+        "https://github.com/CUNY-CL/wikipron/blob/master/data/scrape/tsv/tgl_latn_narrow.tsv"
+      ],
+      "evidence_status": "maintainer_table_counts_and_license_separation_confirmed; linguistic accuracy unassessed"
+    },
+    {
+      "id": "filipino-byt5-g2p",
+      "name": "ByT5 stress-aware Filipino G2P",
+      "kind": "g2p_research",
+      "language": [
+        "Filipino"
+      ],
+      "primary_url": "https://github.com/dlsu-cse-nlp/filipino-byt5-g2p",
+      "verified_at": "2026-10-29",
+      "summary": "Sentence-level G2P research addressing Filipino stress, with fine-tuning and evaluation scripts.",
+      "declared_size": {
+        "display": "Not a singing corpus; duration not applicable",
+        "basis": "repository_inspection"
+      },
+      "annotations": [
+        "Sentence-level phonetic datasets",
+        "LLM-assisted annotation guided by Wiktionary",
+        "Stress-aware model output"
+      ],
+      "license": {
+        "identifier": "Unspecified in inspected repository and checkpoint metadata",
+        "source_url": "https://github.com/dlsu-cse-nlp/filipino-byt5-g2p",
+        "attribution": "DLSU CSE NLP project and its paper; inspect upstream data obligations.",
+        "training_use": "Unresolved; code and dataset visibility do not establish reuse permission.",
+        "redistribution": "No code, checkpoint or dataset copied here.",
+        "commercial_use": "Unresolved.",
+        "uncertainties": [
+          "README inference and reproduction sections remain work in progress.",
+          "Checkpoint existence was confirmed by public metadata; usability was not tested."
+        ]
+      },
+      "fit": {
+        "pronunciation_frontend": "Promising stress-aware candidate requiring license resolution, execution and native-speaker evaluation.",
+        "svs_training": "A frontend research aid, not proof of singable phone or note alignment.",
+        "svc_guide": "Not a recording."
+      },
+      "model_url": "https://huggingface.co/lowestofthelow/filipino-byt5-g2p",
+      "evidence_status": "repository_and_checkpoint_metadata_confirmed; model not run"
+    },
+    {
+      "id": "fleurs-fil-ph",
+      "name": "FLEURS Filipino (fil_ph)",
+      "kind": "speech_corpus",
+      "language": [
+        "Filipino"
+      ],
+      "primary_url": "https://huggingface.co/datasets/google/fleurs",
+      "verified_at": "2026-10-29",
+      "summary": "Read speech with transcripts in the Filipino configuration of Google’s multilingual evaluation corpus.",
+      "declared_size": {
+        "utterances": 3266,
+        "splits": {
+          "train": 1884,
+          "validation": 418,
+          "test": 964
+        },
+        "sample_rate_hz": 16000,
+        "basis": "publisher_dataset_card"
+      },
+      "annotations": [
+        "Transcription and raw transcription",
+        "Gender metadata",
+        "Language and sample counts"
+      ],
+      "license": {
+        "identifier": "CC-BY-4.0",
+        "source_url": "https://huggingface.co/datasets/google/fleurs/blob/main/README.md",
+        "attribution": "Credit FLEURS and its authors; retain license and modification notices.",
+        "training_use": "Dataset card declares CC BY 4.0; preserve evaluation splits if measuring comparable results.",
+        "redistribution": "Subject to declared attribution license.",
+        "commercial_use": "Declared license permits commercial reuse subject to its conditions.",
+        "uncertainties": [
+          "Audio quality and phonetic coverage were not independently checked; this catalog is not rights certification."
+        ]
+      },
+      "fit": {
+        "pronunciation_frontend": "Useful speech transcript and recognition baseline.",
+        "svs_training": "No singing, note labels or sustained-vowel evidence; do not add its size to singing hours.",
+        "svc_guide": "Speech is not a melody or singing guide."
+      },
+      "evidence_status": "publisher_configuration_and_split_metadata_confirmed; audio unassessed"
+    },
+    {
+      "id": "silencio-tagalog-speech",
+      "name": "Silencio Tagalog / Filipino spontaneous speech sample",
+      "kind": "speech_corpus",
+      "language": [
+        "Tagalog",
+        "Filipino"
+      ],
+      "primary_url": "https://huggingface.co/datasets/SilencioNetwork/tagalog-filipino-speech",
+      "verified_at": "2026-10-29",
+      "summary": "A small spontaneous-speech evaluation sample with human transcripts and machine word alignment.",
+      "declared_size": {
+        "hours": 2.03,
+        "clips": 90,
+        "speakers": 16,
+        "sample_rate_hz": 48000,
+        "channels": 2,
+        "basis": "publisher_report"
+      },
+      "annotations": [
+        "Human transcriptions",
+        "wav2vec2 MMS forced word timings",
+        "Speaker and self-reported language metadata"
+      ],
+      "license": {
+        "identifier": "CC-BY-NC-4.0 with publisher-stated model-use conditions",
+        "source_url": "https://huggingface.co/datasets/SilencioNetwork/tagalog-filipino-speech#license",
+        "attribution": "Silencio Network, Tagalog / Filipino Spontaneous Speech, 2026.",
+        "training_use": "Publisher states consent covers ML use and trained weights retain noncommercial restrictions; sample is positioned for evaluation.",
+        "redistribution": "Follow declared license and publisher conditions.",
+        "commercial_use": "Commercial benchmarking and model use require separate licensing according to publisher.",
+        "uncertainties": [
+          "Consent records were not inspected.",
+          "Publisher’s catalog-scale claims are not this sample’s size."
+        ]
+      },
+      "fit": {
+        "pronunciation_frontend": "Useful spontaneous-speech alignment and ASR comparison; timings are machine-derived.",
+        "svs_training": "Speech only; no pitch-note singing annotation.",
+        "svc_guide": "Not a sung guide or permission to clone speakers."
+      },
+      "evidence_status": "publisher_metadata_and_terms_confirmed; audio_and_consent_records_unassessed"
+    },
+    {
+      "id": "filipino-speech-corpus-sapinsapin",
+      "name": "Filipino Speech Corpus — SapinSapin repackaging",
+      "kind": "speech_corpus",
+      "language": [
+        "Filipino",
+        "Tagalog"
+      ],
+      "primary_url": "https://huggingface.co/datasets/sapinsapin/filipinospeechcorpus",
+      "verified_at": "2026-10-29",
+      "summary": "Segment-level repackaging of Ramil Sagum’s speech corpus, largely isolated words.",
+      "declared_size": {
+        "reported_segments": 313322,
+        "hub_rows": 305246,
+        "hours": 65.1,
+        "speakers": 125,
+        "sample_rate_hz": 16000,
+        "basis": "repackager_card_and_hub_metadata"
+      },
+      "annotations": [
+        "Transcripts",
+        "Speaker metadata",
+        "Read, spontaneous and machine-segmented speech"
+      ],
+      "license": {
+        "identifier": "Conflicting signals: Hub tag MIT; card says research use",
+        "source_url": "https://huggingface.co/datasets/sapinsapin/filipinospeechcorpus#license-source-and-citation",
+        "attribution": "Repackager requests citation of Ramil Sagum’s original corpus.",
+        "training_use": "Resolve original recordings’ terms before training or distribution; do not rely on the Hub tag alone.",
+        "redistribution": "Underlying recording permission remains unresolved.",
+        "commercial_use": "Unresolved because card and tag differ.",
+        "uncertainties": [
+          "Metadata row/segment counts differ.",
+          "Repackager is not proof of original-rightsholder permission."
+        ]
+      },
+      "fit": {
+        "pronunciation_frontend": "Possible word-level speech comparison after permission and segmentation checks.",
+        "svs_training": "Speech only; most segments are single words, not songs or connected singing.",
+        "svc_guide": "Not a sung guide."
+      },
+      "evidence_status": "repackager_claims_confirmed; original_permissions_and_audio_unassessed"
+    },
+    {
+      "id": "mms-tts-tgl",
+      "name": "Meta MMS Tagalog TTS checkpoint",
+      "kind": "speech_model",
+      "language": [
+        "Tagalog"
+      ],
+      "primary_url": "https://huggingface.co/facebook/mms-tts-tgl",
+      "verified_at": "2026-10-29",
+      "summary": "A language-specific VITS text-to-speech model; this is a speech checkpoint, not singing data.",
+      "declared_size": {
+        "parameters_millions": 36.3,
+        "basis": "publisher_model_card"
+      },
+      "annotations": [
+        "Text-conditioned speech model",
+        "No supplied singing score or lyric alignment"
+      ],
+      "license": {
+        "identifier": "CC-BY-NC-4.0",
+        "source_url": "https://huggingface.co/facebook/mms-tts-tgl#license",
+        "attribution": "Meta AI; cite Pratap et al., Scaling Speech Technology to 1,000+ Languages.",
+        "training_use": "Any derivative use must respect the checkpoint’s noncommercial license.",
+        "redistribution": "Subject to checkpoint license; raw training data is not supplied by this model card.",
+        "commercial_use": "Not permitted by the declared noncommercial license without another grant.",
+        "uncertainties": [
+          "No inference or pronunciation evaluation performed."
+        ]
+      },
+      "fit": {
+        "pronunciation_frontend": "Potential noncommercial speech comparison after actual testing.",
+        "svs_training": "Not a singing model or a source of measured singing hours.",
+        "svc_guide": "TTS output is not a verified melody-conditioned sung guide."
+      },
+      "evidence_status": "publisher_model_metadata_confirmed; model not downloaded or run"
+    },
+    {
+      "id": "youtube-wish-binibini",
+      "name": "Zack Tabudlo — Binibini, Wish 107.5 live",
+      "kind": "youtube_lead",
+      "language": [
+        "Tagalog song lead; full performance language unassessed"
+      ],
+      "primary_url": "https://www.youtube.com/watch?v=KloGL0jrJ9Y",
+      "verified_at": "2026-10-29",
+      "summary": "Official Wish upload found as a possible listening and future permission-research lead.",
+      "declared_size": {
+        "display": "One performance; duration not verified",
+        "basis": "official_upload_metadata"
+      },
+      "annotations": [
+        "Public title and publisher description only",
+        "No aligned lyrics, phones or notes inspected"
+      ],
+      "license": {
+        "identifier": "No training grant verified",
+        "source_url": "https://www.youtube.com/watch?v=KloGL0jrJ9Y",
+        "attribution": "Performance: Zack Tabudlo; upload: Wish 107.5; description identifies Universal Music Publishing Group Philippines.",
+        "training_use": "Unverified; exclude from training inputs until actual permissions are established.",
+        "redistribution": "Description prohibits reuploading.",
+        "commercial_use": "Unverified.",
+        "uncertainties": [
+          "Public streaming does not establish recording, composition or performer training consent."
+        ]
+      },
+      "fit": {
+        "pronunciation_frontend": "Potential listening reference, with language and transcript verification still needed.",
+        "svs_training": "Candidate only; no training files included or authorized.",
+        "svc_guide": "No permission for voice conversion or imitation established."
+      },
+      "evidence_status": "candidate_only; official_upload_metadata_read; no media downloaded or listened to"
+    },
+    {
+      "id": "youtube-wish-akin-ka-na-lang",
+      "name": "Morissette — Akin Ka Na Lang, Wish 107.5 live",
+      "kind": "youtube_lead",
+      "language": [
+        "Tagalog song lead; full performance language unassessed"
+      ],
+      "primary_url": "https://www.youtube.com/watch?v=p2FXQgtmPDw",
+      "verified_at": "2026-10-29",
+      "summary": "Official Wish upload found as a contrasting singer lead for listening and permission research.",
+      "declared_size": {
+        "display": "One performance; duration not verified",
+        "basis": "official_upload_metadata"
+      },
+      "annotations": [
+        "Public title and publisher description only",
+        "No aligned lyrics, phones or notes inspected"
+      ],
+      "license": {
+        "identifier": "No training grant verified",
+        "source_url": "https://www.youtube.com/watch?v=p2FXQgtmPDw",
+        "attribution": "Performance: Morissette; upload: Wish 107.5; composition: Francis Salazar; description credits ABS-CBN / Star Songs.",
+        "training_use": "Unverified; exclude from training inputs until actual permissions are established.",
+        "redistribution": "Description prohibits reuploading.",
+        "commercial_use": "Unverified.",
+        "uncertainties": [
+          "Publisher’s permission to stream the performance does not transfer ML training or voice-use permission to this project."
+        ]
+      },
+      "fit": {
+        "pronunciation_frontend": "Potential listening reference, with full language and transcript verification still needed.",
+        "svs_training": "Candidate only; no training files included or authorized.",
+        "svc_guide": "No permission for voice conversion or imitation established."
+      },
+      "evidence_status": "candidate_only; official_upload_metadata_read; no media downloaded or listened to"
+    }
+  ]
+}
