@@ -1,4 +1,4 @@
-include README.md LICENSE
+include README.md ROADMAP.md LICENSE
 recursive-include examples *.json
 recursive-include tests *.py
 recursive-include data *.json

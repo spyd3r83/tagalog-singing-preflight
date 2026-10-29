@@ -9,6 +9,7 @@ import pathlib
 import sys
 
 from tagalog_singing_preflight import audit
+from tagalog_singing_preflight import soulx
 from tagalog_singing_preflight import text
 from tagalog_singing_preflight import voicing
 
@@ -36,7 +37,14 @@ def main(argv: list[str] | None = None) -> int:
     voicing_parser = subparsers.add_parser("voicing", help="Compare aligned F0 masks.")
     voicing_parser.add_argument("guide", type=pathlib.Path)
     voicing_parser.add_argument("conditioning", type=pathlib.Path)
-    for subparser in (text_parser, audit_parser, voicing_parser):
+    soulx_parser = subparsers.add_parser(
+        "soulx", help="Audit native SoulX SVS strings.")
+    soulx_parser.add_argument("metadata", type=pathlib.Path)
+    soulx_parser.add_argument("phoneset", type=pathlib.Path)
+    soulx_parser.add_argument("--expected-frames", type=int, required=True)
+    soulx_parser.add_argument("--sample-rate", type=int, default=24000)
+    soulx_parser.add_argument("--hop-size", type=int, default=480)
+    for subparser in (text_parser, audit_parser, voicing_parser, soulx_parser):
         subparser.add_argument("--output", type=pathlib.Path,
                                help="Create a new JSON report; refuse overwrite.")
     args = parser.parse_args(argv)
@@ -47,6 +55,10 @@ def main(argv: list[str] | None = None) -> int:
                       "text": text.normalize_hint(args.text)}
         elif args.command == "audit":
             result = audit.audit_plan(_load_json(args.plan))
+        elif args.command == "soulx":
+            result = soulx.audit_metadata(
+                _load_json(args.metadata), _load_json(args.phoneset),
+                args.expected_frames, args.sample_rate, args.hop_size)
         else:
             comparison = voicing.compare_voicing(
                 _load_json(args.guide), _load_json(args.conditioning))

@@ -4,6 +4,8 @@ Catch mechanical input errors before a singing-synthesis run: unsupported phonem
 
 It preserves the original text and reports what it can check. A passing report does **not** establish correct pronunciation, stress, singer identity, or musical quality. This is not a singing model or a Tagalog language pack.
 
+The project's long-term goal is a singing system with SoulX-like control and fluent Tagalog delivery, including newly supplied lyrics. The current tools are the first step. [ROADMAP.md](ROADMAP.md) tracks the path through model integration, pronunciation, permitted singing data, adaptation experiments, and listening evaluation. Contributions can advance any of those areas; they are not limited to preflight checks.
+
 ## Run it
 
 Python 3.10 or later is required. There are no runtime dependencies, accounts, or model downloads. From a checkout:
@@ -61,6 +63,23 @@ Zero means unvoiced; positive values mean voiced. Tracks must declare the same r
 
 Numeric inputs must be finite and nonnegative. Rates must be positive. The CLI limits each JSON file to 32 MiB; the library limits duration groups to 100,000 and F0 tracks to 1,000,000 frames. Decimal inputs support up to 18 fractional places. Out-of-contract values are refused.
 
+## Check native SoulX metadata
+
+The `soulx` command checks the native SVS metadata format without loading a model:
+
+```sh
+python -m tagalog_singing_preflight soulx examples/soulx-metadata.json examples/soulx-example-phoneset.json --expected-frames 50
+python -m tagalog_singing_preflight soulx examples/soulx-short-f0.json examples/soulx-example-phoneset.json --expected-frames 50
+```
+
+The first example passes with exit code 0. The second exits with code 1 because its F0 track is shorter than the note metadata. The example phoneset is an illustrative subset. For real inputs, supply the receiving frontend's actual `phone_set.json`; a declared vocabulary does not verify checkpoint compatibility.
+
+The checker accepts a metadata object or a list containing one object. Required fields are whitespace-delimited strings named `phoneme`, `duration`, `note_pitch` and `note_type`; `f0` is optional. It checks group counts, note embedding indices, pause normalization and merging, expanded English phone groups and structural tokens, native float-floor frame counts, and F0 length. Reports identify the [upstream processor revision](https://github.com/Soul-AILab/SoulX-Singer/blob/81aeb3ae772c70093c3de74dc23c92d983801ae4/soulxsinger/utils/data_processor.py) used for these rules.
+
+Defaults are a 24,000 Hz sample rate and 480-sample hop, giving a 50 Hz frame rate. Only positive integer frame rates are supported. `--output` creates a new report and refuses overwrite. Exit codes are 0 for pass, 1 for a failed metadata check (including invalid fields in parsed JSON), and 2 for malformed JSON, command arguments or an input/output error.
+
+This is a source-derived diagnostic, not execution of the native tensor processor. It does not validate every tensor assignment, generate phonemes, repair metadata, load a checkpoint or assess audio. In particular, detecting a shortened F0 track prevents treating silent truncation as a complete phrase; it does not choose or create a correct pitch guide.
+
 ## Library entry points
 
 ```python
@@ -74,13 +93,15 @@ checked = phonemes.check_vocabulary(["A", "B A"], ["A", "B"])
 
 `text.normalize_hint` returns separate `original`, NFC-normalized `nfc`, and `frontend_hint` fields. The hint changes curly apostrophes between letters to ASCII apostrophes and reports those positions. Diacritics, spacing, quotation marks outside contractions, and phonetic glottal symbols are retained. This is a frontend compatibility hint, not a pronunciation repair. `audit.audit_plan(plan)` combines the checks into a versioned JSON-compatible report.
 
+For native metadata, use `soulx.audit_metadata(metadata, vocabulary, expected_frames, sample_rate=24000, hop_size=480)` from the `tagalog_singing_preflight.soulx` module. It returns a JSON-compatible diagnostic report and leaves the inputs unchanged.
+
 ## Evidence and limits
 
 The regression suite covers Unicode preservation, unknown tokens, frame allocation, malformed numeric inputs, shared F0 clocks, mismatch intervals, CLI failures, and refusal to overwrite reports. Public examples use original synthetic text and contours.
 
 A private integration check found a 7.50-second input becoming 374 rather than 375 frames under binary-float sum/floor. The allocator returned 375. A separate check found 159 voicing-mask differences across 475 frames, despite equal pitch values on all 172 jointly voiced frames. These results demonstrate metadata diagnostics, not improved audio or native-language correctness. Private source material is not included.
 
-Supported here: text preservation, declared-vocabulary checks, timing allocation/audit, and aligned voicing-mask comparison. Experimental: applying the diagnostics through a model-specific adapter. Not implemented: automatic G2P/IPA, stress prediction, model-language expansion, training, synthesis, conversion, audio repair, or listening evaluation.
+Supported here: text preservation, declared-vocabulary checks, timing allocation/audit, aligned voicing-mask comparison, and the documented native SoulX metadata audit. Applying corrected inputs through a model runtime remains experimental. Not implemented: automatic G2P/IPA, stress prediction, model-language expansion, training, synthesis, conversion, audio repair, or listening evaluation.
 
 ## Resource catalog and contributions
 
