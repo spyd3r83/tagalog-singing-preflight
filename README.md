@@ -17,7 +17,7 @@ python -m tagalog_singing_preflight audit examples/valid-plan.json
 python -m unittest discover -s tests -v
 ```
 
-The first command returns JSON with `"status": "pass"` and exits with code 0. To preserve a report, add `--output report.json`; an existing file is never overwritten. Inputs are read without modification.
+The audit command returns JSON with `"status": "pass"` and exits with code 0. To preserve a report, add `--output report.json`; an existing file is never overwritten. Inputs are read without modification.
 
 Two examples deliberately fail:
 
@@ -74,7 +74,17 @@ python -m tagalog_singing_preflight soulx examples/soulx-short-f0.json examples/
 
 The first example passes with exit code 0. The second exits with code 1 because its F0 track is shorter than the note metadata. The example phoneset is an illustrative subset. For real inputs, supply the receiving frontend's actual `phone_set.json`; a declared vocabulary does not verify checkpoint compatibility.
 
+A note can also have matching duration and F0 counts while its expanded phones cannot fit the native alignment loop:
+
+```sh
+python -m tagalog_singing_preflight soulx examples/soulx-insufficient-capacity.json examples/soulx-example-phoneset.json --expected-frames 2
+```
+
+This original synthetic example exits with code 1 and `NATIVE_ALIGNMENT_CAPACITY`. Its two-frame note expands to three content positions, including the English separator. The pinned native processor stops assigning notes at that point and leaves both alignment frames at zero. The report identifies that note and any later source groups skipped by the same early stop.
+
 The checker accepts a metadata object or a list containing one object. Required fields are whitespace-delimited strings named `phoneme`, `duration`, `note_pitch` and `note_type`; `f0` is optional. It checks group counts, note embedding indices, pause normalization and merging, expanded English phone groups and structural tokens, native float-floor frame counts, and F0 length. Reports identify the [upstream processor revision](https://github.com/Soul-AILab/SoulX-Singer/blob/81aeb3ae772c70093c3de74dc23c92d983801ae4/soulxsinger/utils/data_processor.py) used for these rules.
+
+The `alignment_capacity` section checks the native loop's capacity condition before assignment, using cumulative float starts and ties-to-even rounding. Its `skipped_source_group_indices` maps a detected early stop back to the supplied metadata. A fitting capacity check does not establish complete tensor alignment: overlap handling, token placement, and unassigned frames remain unassessed.
 
 Defaults are a 24,000 Hz sample rate and 480-sample hop, giving a 50 Hz frame rate. Only positive integer frame rates are supported. `--output` creates a new report and refuses overwrite. Exit codes are 0 for pass, 1 for a failed metadata check (including invalid fields in parsed JSON), and 2 for malformed JSON, command arguments or an input/output error.
 

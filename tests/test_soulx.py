@@ -133,6 +133,87 @@ class NativeMetadataTest(unittest.TestCase):
         report = soulx.audit_metadata(metadata, example_phoneset(), 50)
         self.assertIn("ZERO_FRAME_GROUPS", error_codes(report))
 
+    def test_native_capacity_failure_is_not_hidden_by_matching_totals(self):
+        metadata = json.loads(
+            (ROOT / "examples/soulx-insufficient-capacity.json").read_text(
+                encoding="utf-8"))
+        original = copy.deepcopy(metadata)
+        report = soulx.audit_metadata(metadata, example_phoneset(), 2)
+        self.assertEqual(report["status"], "fail")
+        self.assertEqual(report["timing"]["native_float_floor_frames"], 2)
+        self.assertEqual(report["f0"]["native_retained_frames"], 2)
+        self.assertEqual(error_codes(report), ["NATIVE_ALIGNMENT_CAPACITY"])
+        self.assertEqual(report["alignment_capacity"], {
+            "first_skipped_native_group": 0,
+            "first_skipped_start_frame": 0,
+            "first_skipped_phone_width": 3,
+            "skipped_source_group_indices": [0],
+            "tensor_assignment_assessed": False,
+        })
+        self.assertEqual(metadata, original)
+
+    def test_capacity_reports_remaining_source_groups_after_pause_merge(self):
+        metadata = {
+            "phoneme": "<AP> <SP> en_S-AH0 en_B",
+            "duration": "0.1 0.1 0.02 0.02",
+            "note_pitch": "0 0 60 61",
+            "note_type": "0 2 2 2",
+            "f0": " ".join(["200"] * 12),
+        }
+        report = soulx.audit_metadata(metadata, example_phoneset(), 12)
+        capacity = report["alignment_capacity"]
+        self.assertEqual(capacity["first_skipped_native_group"], 1)
+        self.assertEqual(capacity["first_skipped_start_frame"], 10)
+        self.assertEqual(capacity["skipped_source_group_indices"], [2, 3])
+        failure = next(error for error in report["errors"]
+                       if error["code"] == "NATIVE_ALIGNMENT_CAPACITY")
+        self.assertEqual(failure["source_group_indices"], [2, 3])
+
+    def test_short_tail_is_refused_after_an_earlier_group_fits(self):
+        metadata = {
+            "phoneme": "en_S en_S-AH0", "duration": "0.96 0.04",
+            "note_pitch": "60 60", "note_type": "2 2",
+            "f0": " ".join(["200"] * 50),
+        }
+        report = soulx.audit_metadata(metadata, example_phoneset(), 50)
+        self.assertEqual(error_codes(report), ["NATIVE_ALIGNMENT_CAPACITY"])
+        capacity = report["alignment_capacity"]
+        self.assertEqual(capacity["first_skipped_native_group"], 1)
+        self.assertEqual(capacity["first_skipped_start_frame"], 48)
+        self.assertEqual(capacity["skipped_source_group_indices"], [1])
+
+    def test_fitting_capacity_does_not_claim_tensor_assignment(self):
+        metadata = {
+            "phoneme": "en_S-AH0", "duration": "0.06",
+            "note_pitch": "60", "note_type": "2", "f0": "200 200 200",
+        }
+        report = soulx.audit_metadata(metadata, example_phoneset(), 3)
+        self.assertEqual(report["status"], "pass", report)
+        capacity = report["alignment_capacity"]
+        self.assertIsNone(capacity["first_skipped_native_group"])
+        self.assertEqual(capacity["skipped_source_group_indices"], [])
+        self.assertFalse(capacity["tensor_assignment_assessed"])
+
+    def test_native_capacity_uses_configured_clock_and_ties_even_starts(self):
+        short = {
+            "phoneme": "en_S-AH0", "duration": "0.02",
+            "note_pitch": "60", "note_type": "2", "f0": "200 200",
+        }
+        report = soulx.audit_metadata(short, example_phoneset(), 2, 24000, 240)
+        self.assertIn("NATIVE_ALIGNMENT_CAPACITY", error_codes(report))
+        for first_duration, second_duration, skipped in (
+                ("0.01", "0.05", None), ("0.011", "0.049", 1)):
+            with self.subTest(first_duration=first_duration):
+                metadata = {
+                    "phoneme": "<SP> en_S-AH0",
+                    "duration": f"{first_duration} {second_duration}",
+                    "note_pitch": "0 60", "note_type": "1 2",
+                }
+                report = soulx.audit_metadata(metadata, example_phoneset(), 3)
+                self.assertEqual(
+                    report["alignment_capacity"]["first_skipped_native_group"],
+                    skipped)
+
 
 class NativeCommandLineTest(unittest.TestCase):
 
@@ -175,6 +256,19 @@ class NativeCommandLineTest(unittest.TestCase):
         report = json.loads(result.stdout)
         self.assertIn("NATIVE_F0_TRUNCATION", error_codes(report))
         self.assertEqual(report["f0"]["native_retained_frames"], 3)
+
+    def test_runnable_capacity_fixture_fails_with_matching_frame_counts(self):
+        result = subprocess.run(
+            [sys.executable, "-m", "tagalog_singing_preflight", "soulx",
+             "examples/soulx-insufficient-capacity.json",
+             "examples/soulx-example-phoneset.json", "--expected-frames", "2"],
+            cwd=ROOT, capture_output=True, encoding="utf-8", timeout=15,
+            check=False)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        report = json.loads(result.stdout)
+        self.assertEqual(error_codes(report), ["NATIVE_ALIGNMENT_CAPACITY"])
+        self.assertEqual(
+            report["alignment_capacity"]["skipped_source_group_indices"], [0])
 
 
 if __name__ == "__main__":

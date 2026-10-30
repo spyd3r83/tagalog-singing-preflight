@@ -8,7 +8,7 @@ This file is the maintained project roadmap. Use pull requests and their validat
 
 The initial release checks text preservation, phoneme vocabulary, timing and aligned voicing masks. Its documented integration results exposed a lost timing frame and mismatched voicing masks. These checks help diagnose inputs; they do not establish pronunciation or audible improvement.
 
-The native SoulX metadata audit adds checks tied to a specific upstream source revision, with original runnable fixtures. It does not execute SoulX's tensor processor or model. Comparing its predictions with the native processor remains an integration task before claiming runtime equivalence.
+The native SoulX metadata audit adds checks tied to a specific upstream source revision, with original runnable fixtures. The audit itself does not execute SoulX's tensor processor or model. On 30 October 2026, a separate CPU check ran the pinned native processor on seven synthetic metadata cases. It exposed a false pass: a two-frame note had matching duration and F0 counts, but its expanded phones could not fit and native processing left both alignment frames at zero. The audit now rejects that capacity failure and identifies later source groups skipped by the same early stop. The comparison also exercised normal inputs, a short tail, a merged pause, timing loss, and F0 truncation. It establishes these bounded metadata observations; full tensor-assignment equivalence, model inference, and audible improvement remain unproved.
 
 Upstream [SoulX-Singer](https://github.com/Soul-AILab/SoulX-Singer/tree/81aeb3ae772c70093c3de74dc23c92d983801ae4) documents Mandarin, English and Cantonese training coverage. That coverage does not establish Tagalog support. Singing voice conversion (SVC) carries content from a sung recording; singing voice synthesis (SVS) must create the supplied words from its conditioning inputs. Evaluate both routes separately.
 
@@ -26,6 +26,8 @@ The [SoulX paper, section 3.3.1](https://arxiv.org/html/2602.07803v1) reports an
 | 6 | Demonstrate useful musical performance | Progress from held-out phrases to a complete original or permitted song. Inspect lyrics, pronunciation, stress, phrasing, pitch, timing, voice consistency and audible artifacts in the actual output. Publish only material permitted for release. |
 
 Work on the next useful unblocked increment. A model experiment can wait for data, compute or approval while tests, frontend work, evaluation tooling or source verification continue. A documentation-only update should resolve a concrete uncertainty or make an existing result reproducible.
+
+The next benchmark increment is an original phrase set and annotation format for native Tagalog review, with development and held-out items kept separate. Label proposed pronunciations and stress annotations as unverified until the required language review is complete.
 
 ## Define quality before comparing audio
 

@@ -84,6 +84,42 @@ def _native_groups(
     return merged
 
 
+def _alignment_capacity(
+    native: list[dict], native_frames: int, sample_rate: int, hop_size: int
+) -> dict:
+    """Check the native loop's capacity guard before tensor assignments.
+
+    This predicts only the guard that stops processing the current and later
+    groups. Occupied-frame adjustments and tensor assignments are not simulated.
+    """
+    result = {
+        "first_skipped_native_group": None,
+        "first_skipped_start_frame": None,
+        "first_skipped_phone_width": None,
+        "skipped_source_group_indices": [],
+        "tensor_assignment_assessed": False,
+    }
+    elapsed = 0.0
+    for index, group in enumerate(native):
+        # Native NumPy round at zero decimals and round both use ties-to-even.
+        start = min(
+            round(elapsed * sample_rate / hop_size), native_frames - 1)
+        phone = group["phoneme"]
+        width = len(phone[3:].split("-")) + 1 if phone.startswith("en_") else 1
+        if start >= native_frames or start + width > native_frames:
+            result.update({
+                "first_skipped_native_group": index,
+                "first_skipped_start_frame": start,
+                "first_skipped_phone_width": width,
+                "skipped_source_group_indices": [
+                    source for skipped in native[index:]
+                    for source in skipped["source_groups"]],
+            })
+            break
+        elapsed += group["native_duration"]
+    return result
+
+
 def audit_metadata(
     metadata: object,
     vocabulary: list[str],
@@ -186,6 +222,18 @@ def audit_metadata(
             "native_float_floor_frames": native_frames,
             "exact_total_seconds": allocation["total_seconds"],
         }
+        capacity = _alignment_capacity(
+            native, native_frames, sample_rate, hop_size)
+        report["alignment_capacity"] = capacity
+        if capacity["first_skipped_native_group"] is not None:
+            report["errors"].append({
+                "code": "NATIVE_ALIGNMENT_CAPACITY",
+                "message": (
+                    "The native pre-assignment capacity guard stops at this "
+                    "group and skips all remaining groups."),
+                "source_group_indices": (
+                    capacity["skipped_source_group_indices"]),
+            })
         if (allocation["total_frames"] != expected_frames
                 or native_frames != expected_frames):
             report["errors"].append({
