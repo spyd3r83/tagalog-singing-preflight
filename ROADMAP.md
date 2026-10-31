@@ -27,7 +27,9 @@ The [SoulX paper, section 3.3.1](https://arxiv.org/html/2602.07803v1) reports an
 
 Work on the next useful unblocked increment. A model experiment can wait for data, compute or approval while tests, frontend work, evaluation tooling or source verification continue. A documentation-only update should resolve a concrete uncertainty or make an existing result reproducible.
 
-The next benchmark increment is an original phrase set and annotation format for native Tagalog review, with development and held-out items kept separate. Label proposed pronunciations and stress annotations as unverified until the required language review is complete.
+The first benchmark preparation increment is available in [data/tagalog-benchmark-v1.json](data/tagalog-benchmark-v1.json): 16 original, assistant-authored phrases split into eight development and eight held-out items, with proposed review focus and structured review records. All 16 records are pending; there are no verified pronunciation or stress labels. The `benchmark` command validates the declared structure, split overlap, and review-record completeness, while explicitly leaving native review unverified. Public held-out items are reserved from development within an experiment; their release does not establish that a model has never seen them.
+
+Next, obtain native Tagalog annotations, record disagreements and corrections, and define the permitted audio references, melody, comparison conditions, and acceptance criteria before evaluating generated performances. Mechanical validation can continue independently; it cannot substitute for that language and listening evidence.
 
 ## Define quality before comparing audio
 

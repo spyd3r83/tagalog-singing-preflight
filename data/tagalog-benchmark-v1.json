@@ -1,0 +1,255 @@
+{
+  "schema_version": 1,
+  "benchmark_id": "tagalog-phrases-v1",
+  "language": "tl",
+  "text_origin": "original_authored",
+  "license": "MIT",
+  "items": [
+    {
+      "id": "dev-01",
+      "split": "development",
+      "text": "Bukas ay magdadala ako ng tubig.",
+      "focus": [
+        "lexical_stress",
+        "connected_phrase"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer_id": null,
+        "reviewed_at": null,
+        "pronunciation_notes": null
+      }
+    },
+    {
+      "id": "dev-02",
+      "split": "development",
+      "text": "Bukas ang bintana sa maliit na silid.",
+      "focus": [
+        "lexical_stress",
+        "connected_phrase"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer_id": null,
+        "reviewed_at": null,
+        "pronunciation_notes": null
+      }
+    },
+    {
+      "id": "dev-03",
+      "split": "development",
+      "text": "Dahan-dahan akong uupo sa tabi mo.",
+      "focus": [
+        "vowel_sequence",
+        "glottal_stop",
+        "connected_phrase"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer_id": null,
+        "reviewed_at": null,
+        "pronunciation_notes": null
+      }
+    },
+    {
+      "id": "dev-04",
+      "split": "development",
+      "text": "Ang bagong awit ay para sa mga bata.",
+      "focus": [
+        "velar_nasal",
+        "glottal_stop",
+        "connected_phrase"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer_id": null,
+        "reviewed_at": null,
+        "pronunciation_notes": null
+      }
+    },
+    {
+      "id": "dev-05",
+      "split": "development",
+      "text": "Ako’y aawit habang ikaw ay nakikinig.",
+      "focus": [
+        "contraction",
+        "vowel_sequence",
+        "connected_phrase"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer_id": null,
+        "reviewed_at": null,
+        "pronunciation_notes": null
+      }
+    },
+    {
+      "id": "dev-06",
+      "split": "development",
+      "text": "Sa ilog ay may tahimik na bangka.",
+      "focus": [
+        "velar_nasal",
+        "connected_phrase"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer_id": null,
+        "reviewed_at": null,
+        "pronunciation_notes": null
+      }
+    },
+    {
+      "id": "dev-07",
+      "split": "development",
+      "text": "Hihintayin ko ang iyong sagot.",
+      "focus": [
+        "vowel_sequence",
+        "connected_phrase"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer_id": null,
+        "reviewed_at": null,
+        "pronunciation_notes": null
+      }
+    },
+    {
+      "id": "dev-08",
+      "split": "development",
+      "text": "Sa dulo, aawit ako nang marahan.",
+      "focus": [
+        "sustained_vowel",
+        "vowel_sequence"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer_id": null,
+        "reviewed_at": null,
+        "pronunciation_notes": null
+      }
+    },
+    {
+      "id": "held-01",
+      "split": "held_out",
+      "text": "Basa ang tuwalya dahil sa ulan.",
+      "focus": [
+        "lexical_stress",
+        "glottal_stop",
+        "connected_phrase"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer_id": null,
+        "reviewed_at": null,
+        "pronunciation_notes": null
+      }
+    },
+    {
+      "id": "held-02",
+      "split": "held_out",
+      "text": "Mabilis ang basa niya sa bagong liham.",
+      "focus": [
+        "lexical_stress",
+        "connected_phrase"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer_id": null,
+        "reviewed_at": null,
+        "pronunciation_notes": null
+      }
+    },
+    {
+      "id": "held-03",
+      "split": "held_out",
+      "text": "Muling umuulan sa kabilang nayon.",
+      "focus": [
+        "vowel_sequence",
+        "velar_nasal"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer_id": null,
+        "reviewed_at": null,
+        "pronunciation_notes": null
+      }
+    },
+    {
+      "id": "held-04",
+      "split": "held_out",
+      "text": "May ngiti sa mukha ng munting bata.",
+      "focus": [
+        "velar_nasal",
+        "connected_phrase"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer_id": null,
+        "reviewed_at": null,
+        "pronunciation_notes": null
+      }
+    },
+    {
+      "id": "held-05",
+      "split": "held_out",
+      "text": "Siya’y aakyat bago sumikat ang araw.",
+      "focus": [
+        "contraction",
+        "vowel_sequence",
+        "glottal_stop"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer_id": null,
+        "reviewed_at": null,
+        "pronunciation_notes": null
+      }
+    },
+    {
+      "id": "held-06",
+      "split": "held_out",
+      "text": "Sa ilalim ng puno ay may mga upuan.",
+      "focus": [
+        "glottal_stop",
+        "vowel_sequence",
+        "connected_phrase"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer_id": null,
+        "reviewed_at": null,
+        "pronunciation_notes": null
+      }
+    },
+    {
+      "id": "held-07",
+      "split": "held_out",
+      "text": "Magaan ang dala kong maliit na bag.",
+      "focus": [
+        "vowel_sequence",
+        "lexical_stress"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer_id": null,
+        "reviewed_at": null,
+        "pronunciation_notes": null
+      }
+    },
+    {
+      "id": "held-08",
+      "split": "held_out",
+      "text": "Aawitin namin ang huling pantig nang dahan-dahan.",
+      "focus": [
+        "sustained_vowel",
+        "connected_phrase"
+      ],
+      "review": {
+        "status": "pending",
+        "reviewer_id": null,
+        "reviewed_at": null,
+        "pronunciation_notes": null
+      }
+    }
+  ]
+}
