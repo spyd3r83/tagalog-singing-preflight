@@ -9,6 +9,7 @@ import pathlib
 import sys
 
 from tagalog_singing_preflight import audit
+from tagalog_singing_preflight import benchmark
 from tagalog_singing_preflight import soulx
 from tagalog_singing_preflight import text
 from tagalog_singing_preflight import voicing
@@ -34,6 +35,9 @@ def main(argv: list[str] | None = None) -> int:
     text_parser.add_argument("text")
     audit_parser = subparsers.add_parser("audit", help="Audit a JSON plan.")
     audit_parser.add_argument("plan", type=pathlib.Path)
+    benchmark_parser = subparsers.add_parser(
+        "benchmark", help="Audit an original phrase benchmark manifest.")
+    benchmark_parser.add_argument("manifest", type=pathlib.Path)
     voicing_parser = subparsers.add_parser("voicing", help="Compare aligned F0 masks.")
     voicing_parser.add_argument("guide", type=pathlib.Path)
     voicing_parser.add_argument("conditioning", type=pathlib.Path)
@@ -44,7 +48,8 @@ def main(argv: list[str] | None = None) -> int:
     soulx_parser.add_argument("--expected-frames", type=int, required=True)
     soulx_parser.add_argument("--sample-rate", type=int, default=24000)
     soulx_parser.add_argument("--hop-size", type=int, default=480)
-    for subparser in (text_parser, audit_parser, voicing_parser, soulx_parser):
+    for subparser in (text_parser, audit_parser, benchmark_parser,
+                      voicing_parser, soulx_parser):
         subparser.add_argument("--output", type=pathlib.Path,
                                help="Create a new JSON report; refuse overwrite.")
     args = parser.parse_args(argv)
@@ -55,6 +60,8 @@ def main(argv: list[str] | None = None) -> int:
                       "text": text.normalize_hint(args.text)}
         elif args.command == "audit":
             result = audit.audit_plan(_load_json(args.plan))
+        elif args.command == "benchmark":
+            result = benchmark.audit_manifest(_load_json(args.manifest))
         elif args.command == "soulx":
             result = soulx.audit_metadata(
                 _load_json(args.metadata), _load_json(args.phoneset),

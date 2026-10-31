@@ -105,13 +105,33 @@ checked = phonemes.check_vocabulary(["A", "B A"], ["A", "B"])
 
 For native metadata, use `soulx.audit_metadata(metadata, vocabulary, expected_frames, sample_rate=24000, hop_size=480)` from the `tagalog_singing_preflight.soulx` module. It returns a JSON-compatible diagnostic report and leaves the inputs unchanged.
 
+## Prepare a Tagalog pronunciation benchmark
+
+The [draft phrase manifest](data/tagalog-benchmark-v1.json) contains 16 original, assistant-authored phrases: eight development items and eight `held_out` items. All 16 await native Tagalog review. The focus tags are proposed review tasks, not verified pronunciation or stress labels. No recordings, phoneme transcriptions, or melodies are included.
+
+```sh
+python -m tagalog_singing_preflight benchmark data/tagalog-benchmark-v1.json
+```
+
+The command exits with code 0 because the manifest structure is valid. Its report includes `NATIVE_REVIEW_PENDING`, `native_review_verified: false`, split and focus counts, and declared review counts. This pass does not establish evaluation readiness or singing quality.
+
+The version 1 profile requires `schema_version: 1`, a `benchmark_id`, `language: "tl"`, `text_origin: "original_authored"`, `license: "MIT"`, and an `items` array. Each item has `id`, `split`, `text`, `focus`, and `review` fields. Use `development` or `held_out` for the split. See the manifest for the seven supported focus tags and complete record shape.
+
+Pending review records have status `pending` and null `reviewer_id`, `reviewed_at`, and `pronunciation_notes`. Records marked `approved` or `needs_revision` require an opaque reviewer identifier, a valid `YYYY-MM-DD` date, and nonblank pronunciation notes. The tool checks record completeness; it does not verify reviewer competence or the truth of an approval. Text origin and license are declarations, not independently verified permissions.
+
+The auditor rejects duplicate item IDs, missing splits, and text shared across splits after NFC normalization and case folding, ignoring punctuation and whitespace while retaining diacritics. It leaves supplied text unchanged. This bounded comparison does not establish semantic separation or absence from model training. Both public splits are visible; `held_out` means reserved from development within a declared experiment, not secret or guaranteed unseen.
+
+The library accepts at most 10,000 items, 4,096 Unicode characters per text or notes field, and 64-character ASCII identifiers beginning with a letter or digit. Identifiers may also contain underscores, dots, and hyphens. The CLI retains its 32 MiB input limit and exclusive `--output` creation. Exit codes are 0 for a valid contract, 1 for a parsed contract failure, and 2 for malformed JSON or input/output errors. `benchmark.audit_manifest(manifest)` exposes the same checks in Python.
+
+The proposed stress and phrasing focus is informed by [Zuraw and Roca's study of Filipino text-setting](https://doi.org/10.1017/S0952675725000041), which found relationships between word prominence and musical note placement. The paper does not validate these phrases or supply their annotations. Native review and subsequent audio evidence remain necessary.
+
 ## Evidence and limits
 
 The regression suite covers Unicode preservation, unknown tokens, frame allocation, malformed numeric inputs, shared F0 clocks, mismatch intervals, CLI failures, and refusal to overwrite reports. Public examples use original synthetic text and contours.
 
 A private integration check found a 7.50-second input becoming 374 rather than 375 frames under binary-float sum/floor. The allocator returned 375. A separate check found 159 voicing-mask differences across 475 frames, despite equal pitch values on all 172 jointly voiced frames. These results demonstrate metadata diagnostics, not improved audio or native-language correctness. Private source material is not included.
 
-Supported here: text preservation, declared-vocabulary checks, timing allocation/audit, aligned voicing-mask comparison, and the documented native SoulX metadata audit. Applying corrected inputs through a model runtime remains experimental. Not implemented: automatic G2P/IPA, stress prediction, model-language expansion, training, synthesis, conversion, audio repair, or listening evaluation.
+Supported here: text preservation, declared-vocabulary checks, timing allocation/audit, aligned voicing-mask comparison, the documented native SoulX metadata audit, and benchmark manifest validation. Applying corrected inputs through a model runtime remains experimental. Not implemented: automatic G2P/IPA, stress prediction, model-language expansion, training, synthesis, conversion, audio repair, or listening evaluation.
 
 ## Resource catalog and contributions
 
