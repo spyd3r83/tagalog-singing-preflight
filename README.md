@@ -125,13 +125,36 @@ The library accepts at most 10,000 items, 4,096 Unicode characters per text or n
 
 The proposed stress and phrasing focus is informed by [Zuraw and Roca's study of Filipino text-setting](https://doi.org/10.1017/S0952675725000041), which found relationships between word prominence and musical note placement. The paper does not validate these phrases or supply their annotations. Native review and subsequent audio evidence remain necessary.
 
+## Prepare a local listening comparison
+
+The `listening` command prepares randomized A/B trials from two sets of supplied WAV clips. It creates anonymous filenames and a blank response sheet, with the condition mapping kept outside the listener folder. It does not synthesize audio, recruit listeners, or evaluate their responses.
+
+This runnable demonstration generates four original **tones**, not sung versions of the phrases. Use a new directory for each run:
+
+```sh
+python examples/make_listening_demo.py ../tagalog-listening-demo
+python -m tagalog_singing_preflight listening data/tagalog-benchmark-v1.json ../tagalog-listening-demo/plan.json ../tagalog-listening-demo/packet --seed 17
+```
+
+The resulting `packet/listener/` contains `trials.json`, `responses.csv`, and two WAVs per trial. The JSON pairs A/B files with the intended text; open the WAVs in a local player and record `A`, `B`, `tie`, or `cannot_assess` in the CSV's `preference` column. Notes are optional. Keep `packet/operator-key.json` with the operator: it contains the seed, source paths, condition descriptions, item IDs, and audio identity records. Source filenames and non-audio WAV chunks are excluded from the listener files. Audible differences can still reveal a condition; this is not a guarantee of blinding.
+
+For real comparisons, replace the demo's plan and tones with permitted clips. The plan declares version 1, an experiment ID, the matching benchmark ID, a split, two conditions, a permission note, and clips. Each condition has `id`, `mode` (`svc`, `svs`, or fixture-only `synthetic`), and a description recording the model, settings, and guide or score used. Each clip has `item_id`, `condition_id`, and a path relative to the plan directory. Select the same nonempty subset from one benchmark split for both conditions. Absolute paths, paths escaping that directory, missing partners, and duplicate pairs are refused. The permission note records your stated basis for local listening; the tool does not verify recording, lyric, or voice-use rights. Keep private plans, audio, keys, and completed responses out of public commits.
+
+The builder reads the complete declared PCM payload and rejects empty, truncated, or unsupported WAVs. It supports ordinary RIFF PCM with one or two channels, 16/24/32-bit samples, 8–96 kHz sample rates, and clips up to 60 seconds. Each pair must have the same format and frame count. Limits are 64 pairs, 32 MiB per input WAV, and 256 MiB of input WAVs in total. New WAV containers preserve the supplied PCM samples and clock; there is no normalization, trimming, or resampling. Matching clocks do not establish matched loudness or a fair acoustic comparison.
+
+Choose one judgment per pass with `--attribute pronunciation` (the default), `phrasing`, or `artifacts`. Use a new packet and seed for each listener session, and keep the mapping from listeners. The same inputs, seed, and Python runtime reproduce the assignment. Showing the intended text means these trials do not measure unprompted word intelligibility. Native Tagalog review, listener suitability, controlled playback levels, prospective criteria, and disagreement analysis remain the experimenter's responsibility. Pending text reviews remain explicitly unverified.
+
+The separation of judgments and randomized presentation is informed by [ITU-R BS.1534-3, Annex 1, sections 3, 5.3, and 6](https://www.itu.int/dms_pubrec/itu-r/rec/bs/R-REC-BS.1534-3-201510-I!!PDF-E.pdf). This exploratory tool does not implement MUSHRA's reference, anchor, assessor-training, or scoring protocol and makes no conformance claim. Packet creation establishes preparation, not pronunciation, musical quality, or fluency.
+
+Success exits with code 0 and a JSON report. Invalid plans, audio, arguments, or file operations exit with code 2. Existing output directories are refused, including empty ones; inputs are unchanged. If writing fails after directory creation, a partial packet may remain and must not be used as complete. The Python entry point is `listening.prepare_packet(manifest, plan, audio_root, output_dir, seed, attribute="pronunciation")`.
+
 ## Evidence and limits
 
 The regression suite covers Unicode preservation, unknown tokens, frame allocation, malformed numeric inputs, shared F0 clocks, mismatch intervals, CLI failures, and refusal to overwrite reports. Public examples use original synthetic text and contours.
 
 A private integration check found a 7.50-second input becoming 374 rather than 375 frames under binary-float sum/floor. The allocator returned 375. A separate check found 159 voicing-mask differences across 475 frames, despite equal pitch values on all 172 jointly voiced frames. These results demonstrate metadata diagnostics, not improved audio or native-language correctness. Private source material is not included.
 
-Supported here: text preservation, declared-vocabulary checks, timing allocation/audit, aligned voicing-mask comparison, the documented native SoulX metadata audit, and benchmark manifest validation. Applying corrected inputs through a model runtime remains experimental. Not implemented: automatic G2P/IPA, stress prediction, model-language expansion, training, synthesis, conversion, audio repair, or listening evaluation.
+Supported here: text preservation, declared-vocabulary checks, timing allocation/audit, aligned voicing-mask comparison, the documented native SoulX metadata audit, benchmark manifest validation, and local randomized listening-packet preparation. Applying corrected inputs through a model runtime remains experimental. Not implemented: automatic G2P/IPA, stress prediction, model-language expansion, training, synthesis, conversion, audio repair, or listening-response analysis.
 
 ## Resource catalog and contributions
 
