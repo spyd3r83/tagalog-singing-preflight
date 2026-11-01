@@ -23,3 +23,5 @@ jobs:
       - run: python -m tagalog_singing_preflight audit examples/valid-plan.json
       - run: python -m tagalog_singing_preflight soulx examples/soulx-metadata.json examples/soulx-example-phoneset.json --expected-frames 50
       - run: python -m tagalog_singing_preflight benchmark data/tagalog-benchmark-v1.json
+      - run: python examples/make_listening_demo.py listening-demo
+      - run: python -m tagalog_singing_preflight listening data/tagalog-benchmark-v1.json listening-demo/plan.json listening-demo/packet --seed 17

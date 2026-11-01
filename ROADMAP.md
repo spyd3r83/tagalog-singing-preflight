@@ -31,6 +31,8 @@ The first benchmark preparation increment is available in [data/tagalog-benchmar
 
 Next, obtain native Tagalog annotations, record disagreements and corrections, and define the permitted audio references, melody, comparison conditions, and acceptance criteria before evaluating generated performances. Mechanical validation can continue independently; it cannot substitute for that language and listening evidence.
 
+On 1 November 2026, the `listening` command adds a runnable local comparison packet: paired WAV validation, randomized trial order and A/B assignment, anonymous PCM-preserving exports, a blank response sheet, and a separate operator key. The original tone demonstration verifies packet mechanics, not singing. Pending phrase reviews remain visible, and no native listening result has been collected. Next, obtain the annotations and permitted sung clips needed for a real held-out comparison; record playback conditions and prospective criteria before collecting separate pronunciation, phrasing, and artifact judgments. SVC and SVS remain distinct declared conditions, and neither is established by the demonstration.
+
 ## Define quality before comparing audio
 
 Before generating a benchmark, record its intended use, baseline, held-out items, inference settings and acceptance criteria. The proposed evaluation dimensions are word intelligibility, natural Tagalog pronunciation and lexical stress, musical phrasing, pitch and timing fidelity, voice consistency, and artifacts. Report these dimensions separately so one score cannot conceal a serious defect.

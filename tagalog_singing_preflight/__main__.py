@@ -10,6 +10,7 @@ import sys
 
 from tagalog_singing_preflight import audit
 from tagalog_singing_preflight import benchmark
+from tagalog_singing_preflight import listening
 from tagalog_singing_preflight import soulx
 from tagalog_singing_preflight import text
 from tagalog_singing_preflight import voicing
@@ -38,6 +39,15 @@ def main(argv: list[str] | None = None) -> int:
     benchmark_parser = subparsers.add_parser(
         "benchmark", help="Audit an original phrase benchmark manifest.")
     benchmark_parser.add_argument("manifest", type=pathlib.Path)
+    listening_parser = subparsers.add_parser(
+        "listening", help="Prepare a new local randomized listening packet.")
+    listening_parser.add_argument("manifest", type=pathlib.Path)
+    listening_parser.add_argument("plan", type=pathlib.Path)
+    listening_parser.add_argument("output_dir", type=pathlib.Path)
+    listening_parser.add_argument("--seed", type=int, required=True)
+    listening_parser.add_argument(
+        "--attribute", choices=list(listening.ATTRIBUTES),
+        default="pronunciation")
     voicing_parser = subparsers.add_parser("voicing", help="Compare aligned F0 masks.")
     voicing_parser.add_argument("guide", type=pathlib.Path)
     voicing_parser.add_argument("conditioning", type=pathlib.Path)
@@ -62,6 +72,10 @@ def main(argv: list[str] | None = None) -> int:
             result = audit.audit_plan(_load_json(args.plan))
         elif args.command == "benchmark":
             result = benchmark.audit_manifest(_load_json(args.manifest))
+        elif args.command == "listening":
+            result = listening.prepare_packet(
+                _load_json(args.manifest), _load_json(args.plan),
+                args.plan.parent, args.output_dir, args.seed, args.attribute)
         elif args.command == "soulx":
             result = soulx.audit_metadata(
                 _load_json(args.metadata), _load_json(args.phoneset),
@@ -75,7 +89,7 @@ def main(argv: list[str] | None = None) -> int:
                       "assessment_limit": audit.LIMIT,
                       "voicing": comparison}
         encoded = json.dumps(result, ensure_ascii=False, indent=2) + "\n"
-        if args.output:
+        if getattr(args, "output", None):
             with args.output.open("x", encoding="utf-8", newline="\n") as target:
                 target.write(encoded)
         else:
