@@ -25,3 +25,4 @@ jobs:
       - run: python -m tagalog_singing_preflight benchmark data/tagalog-benchmark-v1.json
       - run: python examples/make_listening_demo.py listening-demo
       - run: python -m tagalog_singing_preflight listening data/tagalog-benchmark-v1.json listening-demo/plan.json listening-demo/packet --seed 17
+      - run: python -m tagalog_singing_preflight responses listening-demo/packet listening-demo/synthetic-responses.csv --listener-id synthetic-demo

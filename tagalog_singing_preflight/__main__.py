@@ -11,6 +11,7 @@ import sys
 from tagalog_singing_preflight import audit
 from tagalog_singing_preflight import benchmark
 from tagalog_singing_preflight import listening
+from tagalog_singing_preflight import responses
 from tagalog_singing_preflight import soulx
 from tagalog_singing_preflight import text
 from tagalog_singing_preflight import voicing
@@ -48,6 +49,11 @@ def main(argv: list[str] | None = None) -> int:
     listening_parser.add_argument(
         "--attribute", choices=list(listening.ATTRIBUTES),
         default="pronunciation")
+    responses_parser = subparsers.add_parser(
+        "responses", help="Tally declared responses for one local packet.")
+    responses_parser.add_argument("packet", type=pathlib.Path)
+    responses_parser.add_argument("csv", type=pathlib.Path)
+    responses_parser.add_argument("--listener-id", required=True)
     voicing_parser = subparsers.add_parser("voicing", help="Compare aligned F0 masks.")
     voicing_parser.add_argument("guide", type=pathlib.Path)
     voicing_parser.add_argument("conditioning", type=pathlib.Path)
@@ -59,7 +65,7 @@ def main(argv: list[str] | None = None) -> int:
     soulx_parser.add_argument("--sample-rate", type=int, default=24000)
     soulx_parser.add_argument("--hop-size", type=int, default=480)
     for subparser in (text_parser, audit_parser, benchmark_parser,
-                      voicing_parser, soulx_parser):
+                      responses_parser, voicing_parser, soulx_parser):
         subparser.add_argument("--output", type=pathlib.Path,
                                help="Create a new JSON report; refuse overwrite.")
     args = parser.parse_args(argv)
@@ -76,6 +82,9 @@ def main(argv: list[str] | None = None) -> int:
             result = listening.prepare_packet(
                 _load_json(args.manifest), _load_json(args.plan),
                 args.plan.parent, args.output_dir, args.seed, args.attribute)
+        elif args.command == "responses":
+            result = responses.summarize_packet(
+                args.packet, args.csv, args.listener_id)
         elif args.command == "soulx":
             result = soulx.audit_metadata(
                 _load_json(args.metadata), _load_json(args.phoneset),

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import math
 import pathlib
@@ -53,7 +54,17 @@ def main() -> None:
     with (args.directory / "plan.json").open("x", encoding="utf-8") as target:
         json.dump(plan, target, ensure_ascii=False, indent=2)
         target.write("\n")
-    print("Created four tone fixtures and plan.json. These are not singing.")
+    # These mock entries exercise tallying; no person listened or chose them.
+    with (args.directory / "synthetic-responses.csv").open(
+            "x", encoding="utf-8", newline="") as target:
+        writer = csv.writer(target)
+        writer.writerow(("trial_id", "preference", "notes"))
+        for trial_id, preference in (("trial-001", "A"),
+                                     ("trial-002", "cannot_assess")):
+            writer.writerow((trial_id, preference,
+                             "Synthetic tooling entry; no listening."))
+    print("Created four tones, plan.json, and synthetic-responses.csv. "
+          "These are tooling fixtures, not singing or listener judgments.")
 
 
 if __name__ == "__main__":

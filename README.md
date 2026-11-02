@@ -148,13 +148,31 @@ The separation of judgments and randomized presentation is informed by [ITU-R BS
 
 Success exits with code 0 and a JSON report. Invalid plans, audio, arguments, or file operations exit with code 2. Existing output directories are refused, including empty ones; inputs are unchanged. If writing fails after directory creation, a partial packet may remain and must not be used as complete. The Python entry point is `listening.prepare_packet(manifest, plan, audio_root, output_dir, seed, attribute="pronunciation")`.
 
+## Tally a listener's responses
+
+The `responses` command maps recorded A/B choices back to their declared conditions for one packet, listener, split, and attribute. It reports counts and coverage, with ties and `cannot_assess` entries kept separate. It does not select a winner or establish language quality.
+
+The tone demonstration above also creates `synthetic-responses.csv`: one mock A choice and one mock `cannot_assess` entry. Both are generated tooling fixtures; no listener supplied them. After preparing that packet, run:
+
+```sh
+python -m tagalog_singing_preflight responses ../tagalog-listening-demo/packet ../tagalog-listening-demo/synthetic-responses.csv --listener-id synthetic-demo --output ../tagalog-listening-demo/summary.json
+```
+
+With seed 17, the mock A choice maps to `tone-high`; the second entry remains `cannot_assess`. For real records, use the completed `listener/responses.csv` from that listener's original packet and an opaque listener identifier. Keep that association intact: version 1 CSV files contain generic trial IDs, so a CSV from another packet with the same IDs cannot be distinguished automatically. The report always sets `response_packet_binding_verified: false`. The command verifies each current anonymous WAV's SHA-256 against the supplied operator key, reporting `audio_matches_key: true` on success. This byte comparison does not authenticate the key or establish which audio a person heard.
+
+Blank preferences and missing response rows are reported separately. `responses_complete` means every trial has a nonblank permitted response, including `cannot_assess`; it does not mean every trial received a preference. An empty response sheet passes the file checks with zero answers. `status: "pass"` establishes valid records and the documented byte comparison. Native reviewer competence, actual listening, recording permissions, and response provenance remain unverified. No human judgments have been collected for the bundled phrases.
+
+Keep the CSV header `trial_id,preference,notes`, with each trial appearing at most once. Preferences are exactly `A`, `B`, `tie`, `cannot_assess`, or blank. Duplicate or unknown trials, duplicate headers, extra or missing columns, malformed quoting, and other preference values are refused. UTF-8 with or without a BOM is supported. Limits are 64 trials, 1 MiB for the CSV, and 4,096 characters per notes field. Notes are validated but excluded from the report; keep the source records privately for review. Success exits with code 0; invalid inputs or file operations exit with code 2. `--output` creates a new report and refuses overwrite. Inputs are unchanged.
+
+The Python entry point is `responses.summarize_packet(packet_dir, responses_path, listener_id)`. Treat its counts as a descriptive record from one session. It provides no population statistics, quality threshold, native-language certification, or pooled comparison across listeners. Obtain suitable native Tagalog listeners, permitted sung clips, reviewed text, and prospective acceptance criteria before drawing conclusions about singing performance.
+
 ## Evidence and limits
 
 The regression suite covers Unicode preservation, unknown tokens, frame allocation, malformed numeric inputs, shared F0 clocks, mismatch intervals, CLI failures, and refusal to overwrite reports. Public examples use original synthetic text and contours.
 
 A private integration check found a 7.50-second input becoming 374 rather than 375 frames under binary-float sum/floor. The allocator returned 375. A separate check found 159 voicing-mask differences across 475 frames, despite equal pitch values on all 172 jointly voiced frames. These results demonstrate metadata diagnostics, not improved audio or native-language correctness. Private source material is not included.
 
-Supported here: text preservation, declared-vocabulary checks, timing allocation/audit, aligned voicing-mask comparison, the documented native SoulX metadata audit, benchmark manifest validation, and local randomized listening-packet preparation. Applying corrected inputs through a model runtime remains experimental. Not implemented: automatic G2P/IPA, stress prediction, model-language expansion, training, synthesis, conversion, audio repair, or listening-response analysis.
+Supported here: text preservation, declared-vocabulary checks, timing allocation/audit, aligned voicing-mask comparison, the documented native SoulX metadata audit, benchmark manifest validation, local randomized listening-packet preparation, and descriptive response tallies. Applying corrected inputs through a model runtime remains experimental. Not implemented: automatic G2P/IPA, stress prediction, model-language expansion, training, synthesis, conversion, audio repair, or statistical analysis of listener populations.
 
 ## Resource catalog and contributions
 
