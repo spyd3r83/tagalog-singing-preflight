@@ -11,6 +11,7 @@ import pathlib
 import random
 import re
 import struct
+import uuid
 import wave
 
 from tagalog_singing_preflight import benchmark
@@ -211,14 +212,19 @@ def _write_json(path: pathlib.Path, value: dict) -> None:
 def prepare_packet(
     manifest: object, plan: object, audio_root: pathlib.Path,
     output_dir: pathlib.Path, seed: int, attribute: str = "pronunciation",
+    packet_version: int = 2,
 ) -> dict:
     """Create a new packet from complete matched PCM clips; never overwrite.
 
     Contracts and all source audio are validated before creating output_dir.
     A later write failure leaves the newly created partial directory for
     inspection and raises OSError. Inputs are never modified. Share only the
-    listener subdirectory, under the applicable media permissions.
+    listener subdirectory, under the applicable media permissions. Version 2
+    adds a fresh random packet ID to distinguish response forms; version 1
+    retains the legacy format. The ID is not authentication or hearing proof.
     """
+    if type(packet_version) is not int or packet_version not in (1, 2):
+        raise ValueError("packet_version must be integer 1 or 2.")
     if type(seed) is not int or not 0 <= seed < 2 ** 63:
         raise ValueError("seed must be an integer from 0 through 2**63-1.")
     if not isinstance(attribute, str) or attribute not in ATTRIBUTES:
@@ -247,6 +253,8 @@ def prepare_packet(
     generator.shuffle(order)
     trials = []
     mappings = []
+    packet_id = str(uuid.uuid4()) if packet_version == 2 else None
+    identity = {"packet_id": packet_id} if packet_version == 2 else {}
     target.mkdir()
     try:
         listener = target / "listener"
@@ -284,7 +292,8 @@ def prepare_packet(
             trials.append(trial)
             mappings.append(mapping)
         _write_json(listener / "trials.json", {
-            "schema_version": 1, "attribute": attribute,
+            "schema_version": packet_version, **identity,
+            "attribute": attribute,
             "question": ATTRIBUTES[attribute], "assessment_limit": LIMIT,
             "instructions": (
                 "Listen to both complete versions in each trial, then enter A, "
@@ -297,10 +306,18 @@ def prepare_packet(
         with (listener / "responses.csv").open(
                 "x", encoding="utf-8", newline="") as output:
             writer = csv.writer(output)
-            writer.writerow(("trial_id", "preference", "notes"))
-            writer.writerows((trial["trial_id"], "", "") for trial in trials)
+            if packet_version == 2:
+                writer.writerow(("packet_id", "trial_id", "preference",
+                                 "notes"))
+                writer.writerows((packet_id, trial["trial_id"], "", "")
+                                 for trial in trials)
+            else:
+                writer.writerow(("trial_id", "preference", "notes"))
+                writer.writerows((trial["trial_id"], "", "")
+                                 for trial in trials)
         _write_json(target / "operator-key.json", {
-            "schema_version": 1, "experiment_id": plan["experiment_id"],
+            "schema_version": packet_version, **identity,
+            "experiment_id": plan["experiment_id"],
             "benchmark_id": plan["benchmark_id"], "split": plan["split"],
             "seed": seed, "attribute": attribute,
             "conditions": list(conditions.values()),
@@ -321,6 +338,7 @@ def prepare_packet(
             warnings.append("NATIVE_REVIEW_" + status.upper())
     return {
         "schema_version": 1, "status": "pass", "trial_count": len(trials),
+        "packet_version": packet_version, "packet_id": packet_id,
         "attribute": attribute, "native_review_verified": False,
         "permission_verified": False, "assessment_limit": LIMIT,
         "review_counts": review_counts, "warnings": warnings,
