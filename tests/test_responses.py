@@ -12,6 +12,7 @@ import sys
 import tempfile
 import unittest
 from unittest import mock
+import uuid
 import wave
 
 from tagalog_singing_preflight import listening
@@ -63,7 +64,7 @@ class _ResponseFixture:
 
     def prepare(self, target: pathlib.Path, seed: int) -> None:
         listening.prepare_packet(self.manifest, self.plan, self.root,
-                                 target, seed)
+                                 target, seed, packet_version=1)
 
     def write_rows(self, rows: list[tuple[str, str, str]]) -> None:
         with self.csv_path.open("w", encoding="utf-8", newline="") as target:
@@ -316,6 +317,189 @@ class ResponsesCommandLineTest(_ResponseFixture, unittest.TestCase):
         (self.packet / "listener/trial-001-A.wav").write_bytes(b"changed")
         stale = self.run_cli("--listener-id", "synthetic-demo")
         self.assertEqual(stale.returncode, 2)
+
+
+class PacketIdentityTest(_ResponseFixture, unittest.TestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.legacy_packet = self.packet
+        self.packet = self.root / "v2-packet"
+        self.prepare_v2(self.packet)
+        self.write_v2_rows([("trial-001", "A", "Synthetic response."),
+                            ("trial-002", "tie", ""),
+                            ("trial-003", "cannot_assess", ""),
+                            ("trial-004", "", "")])
+
+    def prepare_v2(self, target: pathlib.Path, seed: int = 17) -> dict:
+        return listening.prepare_packet(self.manifest, self.plan, self.root,
+                                        target, seed)
+
+    def write_v2_rows(self, rows: list[tuple[str, str, str]]) -> None:
+        with self.csv_path.open("w", encoding="utf-8", newline="") as target:
+            writer = csv.writer(target)
+            writer.writerow(("packet_id", "trial_id", "preference", "notes"))
+            writer.writerows((self.key()["packet_id"], *row) for row in rows)
+
+    def test_default_v2_id_is_shared_without_claiming_provenance(self):
+        key = self.key()
+        listener = self.packet / "listener/trials.json"
+        trials = json.loads(listener.read_text("utf-8"))
+        self.assertEqual(key["schema_version"], 2)
+        self.assertEqual(trials["schema_version"], 2)
+        self.assertEqual(key["packet_id"], trials["packet_id"])
+        parsed = uuid.UUID(key["packet_id"])
+        self.assertEqual(parsed.version, 4)
+        self.assertEqual(str(parsed), key["packet_id"])
+        with (self.packet / "listener/responses.csv").open(
+                encoding="utf-8", newline="") as source:
+            rows = list(csv.DictReader(source))
+        self.assertEqual(len(rows), 4)
+        self.assertTrue(all(row["packet_id"] == key["packet_id"]
+                            and row["preference"] == "" for row in rows))
+        report = self.summarize()
+        self.assertEqual(report["packet_version"], 2)
+        self.assertEqual(report["packet_id"], key["packet_id"])
+        self.assertIs(report["response_packet_id_matches"], True)
+        self.assertEqual((report["answered_trials"], report["ties"],
+                          report["cannot_assess"]), (3, 1, 1))
+        self.assertEqual(report["blank_trial_ids"], ["trial-004"])
+        for field in ("response_packet_binding_verified",
+                      "listening_performed_verified", "native_review_verified",
+                      "permission_verified"):
+            self.assertFalse(report[field])
+
+    def test_same_seed_keeps_assignment_and_audio_but_gets_fresh_id(self):
+        other = self.root / "same-seed"
+        self.prepare_v2(other)
+        first_key = self.key()
+        second_key = json.loads(
+            (other / "operator-key.json").read_text("utf-8"))
+        self.assertNotEqual(first_key["packet_id"], second_key["packet_id"])
+        self.assertEqual(first_key["trials"], second_key["trials"])
+        first_trials = json.loads(
+            (self.packet / "listener/trials.json").read_text("utf-8"))
+        second_trials = json.loads((other / "listener/trials.json").read_text(
+            "utf-8"))
+        self.assertEqual(first_trials["trials"], second_trials["trials"])
+        for source in (self.packet / "listener").glob("*.wav"):
+            self.assertEqual(source.read_bytes(),
+                             (other / "listener" / source.name).read_bytes())
+        with self.assertRaisesRegex(ValueError, "CSV packet_id"):
+            self.summarize(other)
+        different = self.root / "different-seed"
+        self.prepare_v2(different, 19)
+        with self.assertRaisesRegex(ValueError, "CSV packet_id"):
+            self.summarize(different)
+
+    def test_mixed_versions_missing_ids_and_key_listener_mismatch_fail(self):
+        source = self.packet / "listener/trials.json"
+        original = json.loads(source.read_text("utf-8"))
+        for changes in ({"schema_version": 1}, {"packet_id": str(uuid.uuid4())},
+                        {"packet_id": None}):
+            with self.subTest(changes=changes):
+                source.write_text(json.dumps({**original, **changes}),
+                                  encoding="utf-8")
+                with self.assertRaises(ValueError):
+                    self.summarize()
+        source.write_text(json.dumps(original), encoding="utf-8")
+        key = self.key()
+        for identifier in (None, "", "not-a-uuid", key["packet_id"].upper(),
+                           key["packet_id"].replace("-", ""),
+                           "00000000-0000-1000-8000-000000000000"):
+            with self.subTest(identifier=identifier):
+                self.change_key({**key, "packet_id": identifier})
+                with self.assertRaises(ValueError):
+                    self.summarize()
+        self.change_key(key)
+        del key["packet_id"]
+        self.change_key(key)
+        with self.assertRaises(ValueError):
+            self.summarize()
+
+    def test_wrong_or_missing_row_id_fails_even_for_blank_preference(self):
+        for identifier in ("", "wrong-id", str(uuid.uuid4())):
+            with self.subTest(identifier=identifier):
+                self.csv_path.write_text(
+                    "packet_id,trial_id,preference,notes\n"
+                    + identifier + ",trial-001,,\n", encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, "CSV packet_id"):
+                    self.summarize()
+        self.csv_path.write_text(
+            "packet_id,trial_id,preference,notes\ntrial-001,A,\n",
+            encoding="utf-8")
+        with self.assertRaises(ValueError):
+            self.summarize()
+
+    def test_header_only_has_no_id_evidence_and_blank_rows_remain_valid(self):
+        self.write_v2_rows([])
+        report = self.summarize()
+        self.assertIsNone(report["response_packet_id_matches"])
+        self.assertEqual(report["response_rows"], 0)
+        self.assertEqual(len(report["missing_row_trial_ids"]), 4)
+        self.csv_path = self.packet / "listener/responses.csv"
+        blank = self.summarize()
+        self.assertIs(blank["response_packet_id_matches"], True)
+        self.assertEqual(blank["answered_trials"], 0)
+        self.assertFalse(blank["responses_complete"])
+
+    def test_v1_and_v2_csv_headers_cannot_be_used_interchangeably(self):
+        with self.assertRaisesRegex(ValueError, "CSV header"):
+            self.summarize(self.legacy_packet)
+        self.write_rows([("trial-001", "A", "Synthetic entry.")])
+        with self.assertRaisesRegex(ValueError, "CSV header"):
+            self.summarize()
+        legacy = self.summarize(self.legacy_packet)
+        self.assertEqual(legacy["packet_version"], 1)
+        self.assertIsNone(legacy["packet_id"])
+        self.assertIsNone(legacy["response_packet_id_matches"])
+        self.assertFalse(legacy["response_packet_binding_verified"])
+
+    def test_packet_version_argument_is_strict_and_creates_no_output(self):
+        for version in (True, None, 0, 3, 2.0, "2"):
+            with self.subTest(version=version):
+                target = self.root / "invalid-version"
+                with self.assertRaises(ValueError):
+                    listening.prepare_packet(
+                        self.manifest, self.plan, self.root, target, 17,
+                        packet_version=version)
+                self.assertFalse(target.exists())
+
+    def test_cli_default_v2_and_explicit_legacy_v1_preserve_contracts(self):
+        manifest = self.root / "manifest.json"
+        plan = self.root / "plan.json"
+        manifest.write_text(json.dumps(self.manifest), encoding="utf-8")
+        plan.write_text(json.dumps(self.plan), encoding="utf-8")
+        for version in (1, 2):
+            target = self.root / f"cli-v{version}"
+            command = [sys.executable, "-S", "-m", "tagalog_singing_preflight",
+                       "listening", str(manifest), str(plan), str(target),
+                       "--seed", "17"]
+            if version == 1:
+                command.extend(("--packet-version", "1"))
+            prepared = subprocess.run(command, cwd=ROOT, capture_output=True,
+                                      encoding="utf-8", timeout=15, check=False)
+            self.assertEqual(prepared.returncode, 0, prepared.stderr)
+            self.assertEqual(json.loads(prepared.stdout)["packet_version"],
+                             version)
+            result = subprocess.run(
+                [sys.executable, "-S", "-m", "tagalog_singing_preflight",
+                 "responses", str(target),
+                 str(target / "listener/responses.csv"),
+                 "--listener-id", "synthetic-demo"], cwd=ROOT,
+                capture_output=True, encoding="utf-8", timeout=15, check=False)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            report = json.loads(result.stdout)
+            self.assertEqual(report["packet_version"], version)
+            self.assertEqual(report["answered_trials"], 0)
+            if version == 2:
+                wrong = subprocess.run(
+                    [sys.executable, "-S", "-m", "tagalog_singing_preflight",
+                     "responses", str(target), str(self.csv_path),
+                     "--listener-id", "synthetic-demo"], cwd=ROOT,
+                    capture_output=True, encoding="utf-8", timeout=15,
+                    check=False)
+                self.assertEqual(wrong.returncode, 2)
 
 
 if __name__ == "__main__":

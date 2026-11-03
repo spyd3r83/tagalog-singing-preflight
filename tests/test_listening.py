@@ -100,7 +100,8 @@ class _ListeningFixture:
             kwargs.get("manifest", self.manifest),
             kwargs.get("plan", self.plan), self.root,
             kwargs.get("output", self.output), kwargs.get("seed", 17),
-            kwargs.get("attribute", "pronunciation"))
+            kwargs.get("attribute", "pronunciation"),
+            kwargs.get("packet_version", 1))
 
     def assert_rejected(self, **kwargs):
         with self.assertRaises((ValueError, OSError)):

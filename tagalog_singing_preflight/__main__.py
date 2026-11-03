@@ -46,6 +46,8 @@ def main(argv: list[str] | None = None) -> int:
     listening_parser.add_argument("plan", type=pathlib.Path)
     listening_parser.add_argument("output_dir", type=pathlib.Path)
     listening_parser.add_argument("--seed", type=int, required=True)
+    listening_parser.add_argument("--packet-version", type=int, choices=(1, 2),
+                                  default=2)
     listening_parser.add_argument(
         "--attribute", choices=list(listening.ATTRIBUTES),
         default="pronunciation")
@@ -81,7 +83,8 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "listening":
             result = listening.prepare_packet(
                 _load_json(args.manifest), _load_json(args.plan),
-                args.plan.parent, args.output_dir, args.seed, args.attribute)
+                args.plan.parent, args.output_dir, args.seed, args.attribute,
+                args.packet_version)
         elif args.command == "responses":
             result = responses.summarize_packet(
                 args.packet, args.csv, args.listener_id)

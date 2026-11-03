@@ -11,18 +11,60 @@ import struct
 import wave
 
 
+def write_mock_responses(packet: pathlib.Path, target_path: pathlib.Path) -> None:
+    """Create explicit mock entries using the supplied packet's identifiers."""
+    with (packet / "listener/trials.json").open("rb") as source:
+        encoded = source.read(1024 * 1024 + 1)
+    if len(encoded) > 1024 * 1024:
+        raise ValueError("Demo trial JSON exceeds 1 MiB.")
+    supplied = json.loads(encoded.decode("utf-8-sig"))
+    if not isinstance(supplied, dict):
+        raise ValueError("Expected a listening packet object.")
+    version = supplied.get("schema_version")
+    if type(version) is not int or version not in (1, 2):
+        raise ValueError("Expected a version 1 or 2 listening packet.")
+    trials = supplied.get("trials")
+    if not isinstance(trials, list) or not 1 <= len(trials) <= 64:
+        raise ValueError("Expected 1-64 demo trials.")
+    packet_id = supplied.get("packet_id")
+    if version == 2 and not isinstance(packet_id, str):
+        raise ValueError("Version 2 demo trials need their packet_id.")
+    rows = []
+    for index, trial in enumerate(trials):
+        if not isinstance(trial, dict):
+            raise ValueError("Expected a demo trial object.")
+        trial_id = trial.get("trial_id")
+        if not isinstance(trial_id, str):
+            raise ValueError("Each demo trial needs its trial_id.")
+        row = [trial_id, "A" if index % 2 == 0 else "cannot_assess",
+               "Synthetic tooling entry; no listening."]
+        rows.append(([packet_id] if version == 2 else []) + row)
+    with target_path.open("x", encoding="utf-8", newline="") as target:
+        writer = csv.writer(target)
+        writer.writerow((["packet_id"] if version == 2 else [])
+                        + ["trial_id", "preference", "notes"])
+        writer.writerows(rows)
+    print("Created mock CSV entries for this packet. No person supplied them.")
+
+
 def main() -> None:
     """Create a new demo directory; its tones are not sung benchmark results."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("directory", type=pathlib.Path)
+    parser.add_argument("destination", type=pathlib.Path,
+                        help="New demo directory, or new mock CSV path.")
+    parser.add_argument("--responses-for", type=pathlib.Path,
+                        help="Create mock CSV entries from this packet.")
     args = parser.parse_args()
+    if args.responses_for:
+        write_mock_responses(args.responses_for, args.destination)
+        return
     source = pathlib.Path(__file__).resolve().parents[1]
     manifest = json.loads((source / "data/tagalog-benchmark-v1.json").read_text(
         encoding="utf-8"))
     items = [item for item in manifest["items"]
              if item["split"] == "development"][:2]
     # Exclusive creation keeps previous inputs, outputs, and listening work safe.
-    args.directory.mkdir()
+    args.destination.mkdir()
     clips = []
     for item_index, item in enumerate(items):
         for condition_index, condition in enumerate(("tone-low", "tone-high")):
@@ -31,7 +73,7 @@ def main() -> None:
             samples = b"".join(struct.pack(
                 "<h", round(3000 * math.sin(2 * math.pi * frequency * frame
                                           / 8000))) for frame in range(3200))
-            with wave.open(str(args.directory / name), "wb") as target:
+            with wave.open(str(args.destination / name), "wb") as target:
                 target.setparams((1, 2, 8000, 3200, "NONE", "not compressed"))
                 target.writeframes(samples)
             clips.append({"item_id": item["id"], "condition_id": condition,
@@ -51,20 +93,10 @@ def main() -> None:
             "checks. No recording, singer, or third-party voice is used."),
         "clips": clips,
     }
-    with (args.directory / "plan.json").open("x", encoding="utf-8") as target:
+    with (args.destination / "plan.json").open("x", encoding="utf-8") as target:
         json.dump(plan, target, ensure_ascii=False, indent=2)
         target.write("\n")
-    # These mock entries exercise tallying; no person listened or chose them.
-    with (args.directory / "synthetic-responses.csv").open(
-            "x", encoding="utf-8", newline="") as target:
-        writer = csv.writer(target)
-        writer.writerow(("trial_id", "preference", "notes"))
-        for trial_id, preference in (("trial-001", "A"),
-                                     ("trial-002", "cannot_assess")):
-            writer.writerow((trial_id, preference,
-                             "Synthetic tooling entry; no listening."))
-    print("Created four tones, plan.json, and synthetic-responses.csv. "
-          "These are tooling fixtures, not singing or listener judgments.")
+    print("Created four tone fixtures and plan.json. These are not singing.")
 
 
 if __name__ == "__main__":

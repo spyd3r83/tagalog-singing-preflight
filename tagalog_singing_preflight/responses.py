@@ -8,6 +8,7 @@ import io
 import json
 import pathlib
 import re
+import uuid
 
 from tagalog_singing_preflight import benchmark
 from tagalog_singing_preflight import listening
@@ -21,8 +22,10 @@ LIMIT = (
     "winner. Current audio bytes match the supplied operator key; key "
     "authenticity, the packet actually heard, human listening, listener "
     "competence, native review, permissions and singing quality are not "
-    "verified. Version 1 CSV trial IDs do not identify their originating "
-    "packet; retain each response file with its original packet."
+    "verified. Version 2 compares declared packet IDs to detect accidental "
+    "mixups; matching IDs do not authenticate response origin. Version 1 CSV "
+    "trial IDs do not identify their originating packet. Retain each response "
+    "file with its original packet."
 )
 _IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,63}\Z")
 _TRIAL_ID = re.compile(r"trial-([0-9]{3})\Z")
@@ -54,9 +57,32 @@ def _load_object(path: pathlib.Path) -> dict:
     value = json.loads(_read_bytes(path, MAX_JSON_BYTES).decode("utf-8-sig"))
     if (not isinstance(value, dict)
             or type(value.get("schema_version")) is not int
-            or value["schema_version"] != 1):
-        raise ValueError("Packet JSON must be an object with schema_version 1.")
+            or value["schema_version"] not in (1, 2)):
+        raise ValueError("Packet JSON needs integer schema_version 1 or 2.")
     return value
+
+
+def _packet_identity(key: dict, listener: dict) -> str | None:
+    """Match v2 declared IDs, without authenticating a response's origin."""
+    if key["schema_version"] != listener["schema_version"]:
+        raise ValueError("Packet key and listener versions must match.")
+    if key["schema_version"] == 1:
+        if "packet_id" in key or "packet_id" in listener:
+            raise ValueError("Version 1 packets must not declare packet_id.")
+        return None
+    identifier = key.get("packet_id")
+    if not isinstance(identifier, str):
+        raise ValueError("Version 2 packet_id must be a canonical UUID4.")
+    try:
+        parsed = uuid.UUID(identifier)
+    except ValueError as error:
+        raise ValueError(
+            "Version 2 packet_id must be a canonical UUID4.") from error
+    if parsed.version != 4 or str(parsed) != identifier:
+        raise ValueError("Version 2 packet_id must be a canonical UUID4.")
+    if listener.get("packet_id") != identifier:
+        raise ValueError("Packet key and listener packet_id must match.")
+    return identifier
 
 
 def _trial_map(value: object) -> dict[str, dict]:
@@ -155,18 +181,27 @@ def _verify_audio(root: pathlib.Path, mappings: dict, trials: dict) -> None:
                     f"Audio bytes do not match key for {identifier} {label}.")
 
 
-def _read_responses(path: pathlib.Path, trial_ids: set[str]) -> dict[str, str]:
+def _read_responses(
+    path: pathlib.Path, trial_ids: set[str], packet_id: str | None,
+) -> dict[str, str]:
     """Read CSV cells; keep absent rows separate from blank preferences."""
     encoded = _read_bytes(path, MAX_CSV_BYTES).decode("utf-8-sig")
     result = {}
     try:
         reader = csv.reader(io.StringIO(encoded, newline=""), strict=True)
-        if next(reader, None) != ["trial_id", "preference", "notes"]:
-            raise ValueError("CSV header must be trial_id,preference,notes.")
+        header = ["trial_id", "preference", "notes"]
+        if packet_id is not None:
+            header.insert(0, "packet_id")
+        if next(reader, None) != header:
+            raise ValueError("CSV header must be " + ",".join(header) + ".")
         for index, row in enumerate(reader, 1):
-            if index > listening.MAX_TRIALS or len(row) != 3:
+            if index > listening.MAX_TRIALS or len(row) != len(header):
                 raise ValueError(
-                    "CSV needs at most 64 rows with exactly 3 cells.")
+                    "CSV needs at most 64 rows with the declared columns.")
+            if packet_id is not None:
+                if row[0] != packet_id:
+                    raise ValueError("CSV packet_id must match this packet.")
+                row = row[1:]
             identifier, preference, notes = row
             if identifier not in trial_ids or identifier in result:
                 raise ValueError("CSV trial IDs must be known and unique.")
@@ -187,7 +222,7 @@ def summarize_packet(
     """Return single-packet declared preference counts without modifying files.
 
     Args:
-        packet_dir: Local v1 packet containing its key and listener directory.
+        packet_dir: Local v1 or v2 packet containing its key and listener files.
         responses_path: UTF-8 response CSV retained with its original packet.
         listener_id: Caller-supplied opaque identifier, not verified identity.
 
@@ -203,9 +238,11 @@ def summarize_packet(
     root = pathlib.Path(packet_dir).resolve()
     key = _load_object(_packet_path(root, "operator-key.json"))
     listener = _load_object(_packet_path(root, "listener/trials.json"))
+    packet_id = _packet_identity(key, listener)
     modes, mappings, trials = _packet_records(key, listener)
     _verify_audio(root, mappings, trials)
-    records = _read_responses(pathlib.Path(responses_path), set(trials))
+    records = _read_responses(pathlib.Path(responses_path), set(trials),
+                              packet_id)
     preferences = dict.fromkeys(modes, 0)
     ties = cannot_assess = 0
     blank = []
@@ -232,6 +269,9 @@ def summarize_packet(
         warnings.append("RESPONSES_INCOMPLETE")
     return {
         "schema_version": 1, "status": "pass", "assessment_limit": LIMIT,
+        "packet_version": key["schema_version"], "packet_id": packet_id,
+        "response_packet_id_matches": (
+            True if packet_id is not None and records else None),
         "experiment_id": key["experiment_id"],
         "benchmark_id": key["benchmark_id"], "split": key["split"],
         "attribute": key["attribute"], "listener_id": listener_id,
