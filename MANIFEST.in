@@ -1,5 +1,6 @@
 include README.md ROADMAP.md CONTRIBUTING.md LICENSE
 recursive-include examples *.json
 recursive-include examples *.py
+recursive-include examples *.tsv
 recursive-include tests *.py
 recursive-include data *.json

@@ -105,6 +105,26 @@ checked = phonemes.check_vocabulary(["A", "B A"], ["A", "B"])
 
 For native metadata, use `soulx.audit_metadata(metadata, vocabulary, expected_frames, sample_rate=24000, hop_size=480)` from the `tagalog_singing_preflight.soulx` module. It returns a JSON-compatible diagnostic report and leaves the inputs unchanged.
 
+## Look up supplied pronunciation candidates
+
+The offline `lexicon` command looks up every occurrence in a caller-supplied pronunciation TSV and keeps all distinct candidates. It identifies missing and ambiguous spellings without selecting a reading, predicting stress, or mapping IPA to SoulX phones. Supply the resource/version label and its **data** terms separately from any software license. These are declarations; the command does not verify permissions or native-language accuracy.
+
+Run the original synthetic demonstration:
+
+```sh
+python -m tagalog_singing_preflight lexicon examples/lexicon-demo.tsv "zaya zana absent" --source-label synthetic-demo --data-license MIT
+```
+
+The report contains one occurrence with a single candidate, one with two candidates, and one missing occurrence. The fixture's spellings and IPA sequences are invented test material, not Tagalog annotations. Exit code 0 and `status: pass` mean the lookup completed, even with missing or ambiguous results. Malformed input or file errors exit with code 2. `--output new-report.json` creates a new report and refuses overwrite; source files remain unchanged. Reports contain the supplied text and matching resource entries, so apply their privacy and data terms before sharing them.
+
+Use UTF-8 TSV with no header: one `word<TAB>space-separated IPA` pair per row, and additional rows for alternative pronunciations. Empty rows and a UTF-8 BOM are accepted. Each key must be a single joined unit. Keys use NFC normalization and exact case; accents, apostrophes and hyphens remain distinct. Canonically equivalent candidate token sequences are deduplicated, retaining the first supplied tokens, their first `source_row`, and the combined `row_count`. Stress marks, glottals, affricates and combining modifiers inside tokens remain intact. IPA tokens are opaque supplied labels; they are not validated phonetics.
+
+Occurrences retain their original spelling and Python Unicode code-point `start` and exclusive `end` offsets. The conservative scanner keeps letters, combining marks, numbers, ASCII/curly apostrophes, and the hyphen characters U+002D/U+2010/U+2011 together. Other punctuation separates units. Initial or terminal apostrophes remain part of the lookup key, including quotation-like marks; they are never silently removed. Thus `puso'`, `puso`, `pag-ibig`, and `ng` require their own exact keys. This is a mechanical lookup policy, not a Tagalog word or syllable tokenizer; the existing `text` hints are not applied to keys.
+
+Bounds are 32 MiB and 200,000 nonempty TSV rows, 256 characters per key, 1,024 characters per pronunciation, 32 distinct candidates per normalized key, and 16,000 input characters with at most 1,024 occurrences. Token separators must be ASCII spaces; extra TSV columns, whitespace-containing keys and control characters are refused. The library entry point is `lexicon.lookup_text(text, lexicon_path, source_label=..., data_license=...)` from `tagalog_singing_preflight.lexicon`, with a `pathlib.Path` for the local file.
+
+The format follows [WikiPron's documented output](https://github.com/CUNY-CL/wikipron/blob/d282e848a211ea31cfd730f0ced8bc8cdab9e83d/README.md#output), but no third-party dictionary is bundled or downloaded. Its [stock broad and narrow scrape settings](https://github.com/CUNY-CL/wikipron/blob/d282e848a211ea31cfd730f0ced8bc8cdab9e83d/data/scrape/lib/scrape.py#L249-L263) both remove stress and syllable boundaries; choosing narrow does not restore them. Stock extraction also [excludes hyphenated and digit-containing words](https://github.com/CUNY-CL/wikipron/blob/d282e848a211ea31cfd730f0ced8bc8cdab9e83d/src/wikipron/scrape.py#L31-L44). Check the exact snapshot's data terms and coverage. Even one dictionary candidate does not establish the intended sentence meaning, singing realization, or correct pronunciation.
+
 ## Prepare a Tagalog pronunciation benchmark
 
 The [draft phrase manifest](data/tagalog-benchmark-v1.json) contains 16 original, assistant-authored phrases: eight development items and eight `held_out` items. All 16 await native Tagalog review. The focus tags are proposed review tasks, not verified pronunciation or stress labels. No recordings, phoneme transcriptions, or melodies are included.

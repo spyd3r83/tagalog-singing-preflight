@@ -143,17 +143,21 @@
         "Tagalog"
       ],
       "primary_url": "https://github.com/CUNY-CL/wikipron",
-      "verified_at": "2026-10-29",
+      "verified_at": "2026-11-04",
+      "upstream_revision": "d282e848a211ea31cfd730f0ced8bc8cdab9e83d",
       "summary": "Wiktionary-derived word-to-IPA pairs, available as separate broad and narrow Tagalog tables.",
       "declared_size": {
         "broad_entries": 28295,
         "narrow_entries": 33062,
-        "basis": "maintainer_scrape_summary"
+        "basis": "maintainer_scrape_summary",
+        "count_verified_at": "2026-10-29"
       },
       "annotations": [
         "Word and space-segmented IPA pairs",
         "Latin-script Tagalog",
-        "Broad and narrow tables are alternatives, not disjoint counts"
+        "Broad and narrow tables are alternatives, not disjoint counts",
+        "Stock broad and narrow scrape configurations both remove stress and syllable boundaries",
+        "Stock extraction excludes hyphenated and digit-containing word titles"
       ],
       "license": {
         "identifier": "Wiktionary content terms; Apache-2.0 applies to WikiPron code",
@@ -167,7 +171,7 @@
         ]
       },
       "fit": {
-        "pronunciation_frontend": "Useful lookup baseline; broad table alone does not provide contextual lexical stress.",
+        "pronunciation_frontend": "Useful lookup baseline; neither stock broad nor narrow tables supply retained stress or context-specific reading selection.",
         "svs_training": "Text-only frontend resource; no audio, notes or singing durations.",
         "svc_guide": "Not a sung guide."
       },
@@ -175,7 +179,9 @@
         "https://github.com/CUNY-CL/wikipron/blob/master/data/scrape/tsv/tgl_latn_broad.tsv",
         "https://github.com/CUNY-CL/wikipron/blob/master/data/scrape/tsv/tgl_latn_narrow.tsv"
       ],
-      "evidence_status": "maintainer_table_counts_and_license_separation_confirmed; linguistic accuracy unassessed"
+      "configuration_source": "https://github.com/CUNY-CL/wikipron/blob/d282e848a211ea31cfd730f0ced8bc8cdab9e83d/data/scrape/lib/scrape.py#L249-L263",
+      "word_filter_source": "https://github.com/CUNY-CL/wikipron/blob/d282e848a211ea31cfd730f0ced8bc8cdab9e83d/src/wikipron/scrape.py#L31-L44",
+      "evidence_status": "format_and_scrape_settings_confirmed; counts_last_checked_2026-10-29; linguistic_accuracy_unassessed"
     },
     {
       "id": "filipino-byt5-g2p",
