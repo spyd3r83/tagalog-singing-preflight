@@ -10,6 +10,7 @@ import sys
 
 from tagalog_singing_preflight import audit
 from tagalog_singing_preflight import benchmark
+from tagalog_singing_preflight import lexicon
 from tagalog_singing_preflight import listening
 from tagalog_singing_preflight import responses
 from tagalog_singing_preflight import soulx
@@ -35,6 +36,12 @@ def main(argv: list[str] | None = None) -> int:
     subparsers = parser.add_subparsers(dest="command", required=True)
     text_parser = subparsers.add_parser("text", help="Preserve text and show hints.")
     text_parser.add_argument("text")
+    lexicon_parser = subparsers.add_parser(
+        "lexicon", help="Look up all candidates in a caller-supplied local TSV.")
+    lexicon_parser.add_argument("lexicon", type=pathlib.Path)
+    lexicon_parser.add_argument("text")
+    lexicon_parser.add_argument("--source-label", required=True)
+    lexicon_parser.add_argument("--data-license", required=True)
     audit_parser = subparsers.add_parser("audit", help="Audit a JSON plan.")
     audit_parser.add_argument("plan", type=pathlib.Path)
     benchmark_parser = subparsers.add_parser(
@@ -66,7 +73,7 @@ def main(argv: list[str] | None = None) -> int:
     soulx_parser.add_argument("--expected-frames", type=int, required=True)
     soulx_parser.add_argument("--sample-rate", type=int, default=24000)
     soulx_parser.add_argument("--hop-size", type=int, default=480)
-    for subparser in (text_parser, audit_parser, benchmark_parser,
+    for subparser in (text_parser, lexicon_parser, audit_parser, benchmark_parser,
                       responses_parser, voicing_parser, soulx_parser):
         subparser.add_argument("--output", type=pathlib.Path,
                                help="Create a new JSON report; refuse overwrite.")
@@ -76,6 +83,10 @@ def main(argv: list[str] | None = None) -> int:
             result = {"schema_version": 1, "status": "pass",
                       "assessment_limit": audit.LIMIT,
                       "text": text.normalize_hint(args.text)}
+        elif args.command == "lexicon":
+            result = lexicon.lookup_text(
+                args.text, args.lexicon, source_label=args.source_label,
+                data_license=args.data_license)
         elif args.command == "audit":
             result = audit.audit_plan(_load_json(args.plan))
         elif args.command == "benchmark":
