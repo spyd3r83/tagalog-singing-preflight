@@ -13,6 +13,7 @@ from tagalog_singing_preflight import benchmark
 from tagalog_singing_preflight import lexicon
 from tagalog_singing_preflight import listening
 from tagalog_singing_preflight import responses
+from tagalog_singing_preflight import review_draft
 from tagalog_singing_preflight import soulx
 from tagalog_singing_preflight import text
 from tagalog_singing_preflight import voicing
@@ -47,6 +48,13 @@ def main(argv: list[str] | None = None) -> int:
     benchmark_parser = subparsers.add_parser(
         "benchmark", help="Audit an original phrase benchmark manifest.")
     benchmark_parser.add_argument("manifest", type=pathlib.Path)
+    review_parser = subparsers.add_parser(
+        "review-draft", help="Prepare a pronunciation review for one phrase.")
+    review_parser.add_argument("manifest", type=pathlib.Path)
+    review_parser.add_argument("item_id")
+    review_parser.add_argument("lexicon", type=pathlib.Path)
+    review_parser.add_argument("--source-label", required=True)
+    review_parser.add_argument("--data-license", required=True)
     listening_parser = subparsers.add_parser(
         "listening", help="Prepare a new local randomized listening packet.")
     listening_parser.add_argument("manifest", type=pathlib.Path)
@@ -74,7 +82,8 @@ def main(argv: list[str] | None = None) -> int:
     soulx_parser.add_argument("--sample-rate", type=int, default=24000)
     soulx_parser.add_argument("--hop-size", type=int, default=480)
     for subparser in (text_parser, lexicon_parser, audit_parser, benchmark_parser,
-                      responses_parser, voicing_parser, soulx_parser):
+                      review_parser, responses_parser, voicing_parser,
+                      soulx_parser):
         subparser.add_argument("--output", type=pathlib.Path,
                                help="Create a new JSON report; refuse overwrite.")
     args = parser.parse_args(argv)
@@ -91,6 +100,10 @@ def main(argv: list[str] | None = None) -> int:
             result = audit.audit_plan(_load_json(args.plan))
         elif args.command == "benchmark":
             result = benchmark.audit_manifest(_load_json(args.manifest))
+        elif args.command == "review-draft":
+            result = review_draft.prepare_draft(
+                _load_json(args.manifest), args.item_id, args.lexicon,
+                source_label=args.source_label, data_license=args.data_license)
         elif args.command == "listening":
             result = listening.prepare_packet(
                 _load_json(args.manifest), _load_json(args.plan),

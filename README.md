@@ -145,6 +145,20 @@ The library accepts at most 10,000 items, 4,096 Unicode characters per text or n
 
 The proposed stress and phrasing focus is informed by [Zuraw and Roca's study of Filipino text-setting](https://doi.org/10.1017/S0952675725000041), which found relationships between word prominence and musical note placement. The paper does not validate these phrases or supply their annotations. Native review and subsequent audio evidence remain necessary.
 
+## Prepare a phrase for pronunciation review
+
+Use `review-draft` to give a reviewer one development phrase in context, with its original text, proposed focus tags, and each occurrence's offsets and supplied pronunciation candidates. The command checks the benchmark manifest and rejects held-out items. It does not copy an earlier approval into the new draft.
+
+```sh
+python -m tagalog_singing_preflight review-draft data/tagalog-benchmark-v1.json dev-05 examples/lexicon-demo.tsv --source-label synthetic-demo --data-license MIT --output review-dev-05.json
+```
+
+The invented dictionary in this example matches none of the six occurrences in `dev-05`. To surface candidates, supply a local TSV you may use for review, with its resource/version label and data terms as described under [pronunciation lookup](#look-up-supplied-pronunciation-candidates). Even a single candidate leaves the annotation blank.
+
+For manual review, use `selected_source_row` to reference a supplied candidate, or `proposed_ipa_tokens` to record a pronunciation the reviewer supplies. Use `notes` for unresolved readings or context, such as the intended meaning, stress, or glottal stops. The draft starts with null annotation fields and a pending phrase review. Keep edited drafts and applicable data terms together; generated files can contain restricted text or dictionary entries.
+
+Exit code 0 means the draft was prepared. Invalid inputs, a held-out item, or an existing output file exit with code 2. The command does not import completed drafts, verify reviewers or permissions, infer pronunciations, or produce model phones. It leaves the manifest and lexicon unchanged.
+
 ## Prepare a local listening comparison
 
 The `listening` command prepares randomized A/B trials from two sets of supplied WAV clips. It creates anonymous filenames and a blank response sheet, with the condition mapping kept outside the listener folder. It does not synthesize audio, recruit listeners, or evaluate their responses.
@@ -202,7 +216,7 @@ The regression suite covers Unicode preservation, unknown tokens, frame allocati
 
 A private integration check found a 7.50-second input becoming 374 rather than 375 frames under binary-float sum/floor. The allocator returned 375. A separate check found 159 voicing-mask differences across 475 frames, despite equal pitch values on all 172 jointly voiced frames. These results demonstrate metadata diagnostics, not improved audio or native-language correctness. Private source material is not included.
 
-Supported here: text preservation, declared-vocabulary checks, timing allocation/audit, aligned voicing-mask comparison, the documented native SoulX metadata audit, benchmark manifest validation, local randomized listening-packet preparation, and descriptive response tallies. Applying corrected inputs through a model runtime remains experimental. Not implemented: automatic G2P/IPA, stress prediction, model-language expansion, training, synthesis, conversion, audio repair, or statistical analysis of listener populations.
+Supported here: text preservation, declared-vocabulary checks, timing allocation/audit, aligned voicing-mask comparison, the documented native SoulX metadata audit, supplied pronunciation lookup, benchmark validation and development review drafts, local randomized listening-packet preparation, and descriptive response tallies. Applying corrected inputs through a model runtime remains experimental. Not implemented: automatic G2P/IPA, stress prediction, model-language expansion, training, synthesis, conversion, audio repair, or statistical analysis of listener populations.
 
 ## Resource catalog and contributions
 
