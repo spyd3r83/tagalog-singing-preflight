@@ -24,6 +24,7 @@ jobs:
       - run: python -m tagalog_singing_preflight soulx examples/soulx-metadata.json examples/soulx-example-phoneset.json --expected-frames 50
       - run: python -m tagalog_singing_preflight benchmark data/tagalog-benchmark-v1.json
       - run: python -m tagalog_singing_preflight lexicon examples/lexicon-demo.tsv "zaya zana absent" --source-label synthetic-demo --data-license MIT
+      - run: python -m tagalog_singing_preflight review-draft data/tagalog-benchmark-v1.json dev-05 examples/lexicon-demo.tsv --source-label synthetic-demo --data-license MIT
       - run: python examples/make_listening_demo.py listening-demo
       - run: python -m tagalog_singing_preflight listening data/tagalog-benchmark-v1.json listening-demo/plan.json listening-demo/packet --seed 17
       - run: python examples/make_listening_demo.py listening-demo/synthetic-responses.csv --responses-for listening-demo/packet
