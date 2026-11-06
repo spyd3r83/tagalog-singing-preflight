@@ -49,7 +49,8 @@ def _text_key(value: object) -> str:
     return key
 
 
-def _review_status(review: object) -> str:
+def validate_review_record(review: object) -> str:
+    """Return the declared status or raise ValueError for invalid fields."""
     if not isinstance(review, dict) or any(
             field not in review for field in _REVIEW_FIELDS):
         raise ValueError("review must contain all four review fields.")
@@ -91,7 +92,8 @@ def _item_fields(item: object) -> tuple[str, str, str, list[str], str]:
             or any(not isinstance(tag, str) or tag not in FOCUS_TAGS
                    for tag in focus) or len(set(focus)) != len(focus)):
         raise ValueError("focus must contain unique supported focus tags.")
-    return identifier, split, key, focus, _review_status(item.get("review"))
+    review_status = validate_review_record(item.get("review"))
+    return identifier, split, key, focus, review_status
 
 
 def audit_manifest(manifest: object) -> dict:

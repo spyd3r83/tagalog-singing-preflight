@@ -113,5 +113,125 @@ class ReviewDraftTest(unittest.TestCase):
             self.assertEqual(output.read_bytes(), saved)
 
 
+class ReviewCheckTest(unittest.TestCase):
+
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.root = pathlib.Path(directory.name)
+        self.manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+        self.manifest["items"][0]["text"] = "Za\u0301 ng."
+        self.lexicon = self.root / "synthetic.tsv"
+        self.lexicon.write_text("Zá\tA\nZá\tˈB\n", encoding="utf-8")
+        self.terms = {"source_label": "synthetic-v1", "data_license": "MIT"}
+        self.draft = review_draft.prepare_draft(
+            self.manifest, "dev-01", self.lexicon, **self.terms)
+
+    def check(self, draft):
+        return review_draft.check_draft(
+            self.manifest, "dev-01", self.lexicon, draft, **self.terms)
+
+    def approved(self):
+        edited = copy.deepcopy(self.draft)
+        edited["review"].update(
+            status="approved", reviewer_id="fixture-only",
+            reviewed_at="2026-11-06", pronunciation_notes="Synthetic record.")
+        edited["occurrences"][0]["annotation"]["selected_source_row"] = 2
+        edited["occurrences"][1]["annotation"].update(
+            proposed_ipa_tokens=["ʔ", "a\u0301"], notes="Synthetic tokens.")
+        return edited
+
+    def test_approved_extracts_selected_and_supplied_tokens_in_context(self):
+        edited = self.approved()
+        before = copy.deepcopy(edited)
+        report = self.check(edited)
+        self.assertEqual(report["declared_review_status"], "approved")
+        self.assertEqual(report["resolved_count"], 2)
+        self.assertEqual(report["unresolved_count"], 0)
+        self.assertEqual(report["resolved_occurrences"], [
+            {"text": "Za\u0301", "start": 0, "end": 3,
+             "ipa_tokens": ["ˈB"], "selected_source_row": 2},
+            {"text": "ng", "start": 4, "end": 6,
+             "ipa_tokens": ["ʔ", "a\u0301"], "selected_source_row": None},
+        ])
+        self.assertEqual(edited, before)
+        self.assertFalse(report["native_review_verified"])
+        self.assertNotIn("fixture-only", json.dumps(report))
+        self.assertNotIn("Synthetic tokens.", json.dumps(report))
+
+    def test_partial_decisions_do_not_export_pronunciations(self):
+        edited = self.approved()
+        edited["occurrences"][1]["annotation"]["proposed_ipa_tokens"] = None
+        with self.assertRaises(ValueError):
+            self.check(edited)
+        edited["review"]["status"] = "needs_revision"
+        report = self.check(edited)
+        self.assertEqual(report["resolved_count"], 1)
+        self.assertEqual(report["unresolved_count"], 1)
+        self.assertEqual(report["resolved_occurrences"], [])
+        self.assertEqual(self.check(self.draft)["declared_review_status"],
+                         "pending")
+
+    def test_rejects_changes_to_generated_context(self):
+        for field, value in (
+                ("original_text", "Zá ng."), ("item_id", "dev-02"),
+                ("schema_version", True), ("permissions_verified", 0)):
+            with self.subTest(field=field):
+                edited = self.approved()
+                edited[field] = value
+                with self.assertRaises(ValueError):
+                    self.check(edited)
+        for field, value in (("end", 2), ("start", False), ("candidates", [])):
+            with self.subTest(occurrence_field=field):
+                edited = self.approved()
+                edited["occurrences"][0][field] = value
+                with self.assertRaises(ValueError):
+                    self.check(edited)
+        self.lexicon.write_text("Zá\tA\nZá\tˈC\n", encoding="utf-8")
+        with self.assertRaises(ValueError):
+            self.check(self.approved())
+
+    def test_rejects_conflicting_choices_and_invalid_values(self):
+        for changes in (
+                {"selected_source_row": True}, {"selected_source_row": 8},
+                {"proposed_ipa_tokens": ["A"]}, {"notes": 7}):
+            with self.subTest(changes=changes):
+                edited = self.approved()
+                edited["occurrences"][0]["annotation"].update(changes)
+                with self.assertRaises(ValueError):
+                    self.check(edited)
+        for tokens in ([], ["a b"], ["a\x00"], ["a" * 1025]):
+            with self.subTest(tokens=tokens):
+                edited = self.approved()
+                annotation = edited["occurrences"][1]["annotation"]
+                annotation["proposed_ipa_tokens"] = tokens
+                with self.assertRaises(ValueError):
+                    self.check(edited)
+
+    def test_cli_validates_edited_file_and_rejects_duplicate_keys(self):
+        manifest = self.root / "manifest.json"
+        manifest.write_text(json.dumps(self.manifest), encoding="utf-8")
+        edited = self.root / "edited.json"
+        original = json.dumps(self.approved()).encode("utf-8")
+        edited.write_bytes(original)
+        command = [
+            sys.executable, "-m", "tagalog_singing_preflight", "review-check",
+            str(manifest), "dev-01", str(self.lexicon), str(edited),
+            "--source-label", "synthetic-v1", "--data-license", "MIT",
+        ]
+        valid = subprocess.run(command, cwd=ROOT, capture_output=True,
+                               timeout=20, check=False)
+        self.assertEqual(valid.returncode, 0, valid.stderr)
+        self.assertEqual(json.loads(valid.stdout)["resolved_count"], 2)
+        self.assertEqual(edited.read_bytes(), original)
+        edited.write_bytes(b'{"schema_version": 1,' + original[1:])
+        report = self.root / "report.json"
+        invalid = subprocess.run([*command, "--output", str(report)], cwd=ROOT,
+                                 capture_output=True, timeout=20, check=False)
+        self.assertEqual(invalid.returncode, 2)
+        self.assertIn(b"duplicate object member", invalid.stderr)
+        self.assertFalse(report.exists())
+
+
 if __name__ == "__main__":
     unittest.main()
