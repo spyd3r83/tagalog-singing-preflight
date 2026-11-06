@@ -22,12 +22,26 @@ from tagalog_singing_preflight import voicing
 MAX_JSON_BYTES = 32 * 1024 * 1024
 
 
-def _load_json(path: pathlib.Path) -> object:
+def _unique_json_object(pairs: list[tuple[str, object]]) -> dict:
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("Review JSON contains a duplicate object member.")
+        result[key] = value
+    return result
+
+
+def _load_json(path: pathlib.Path, *, unique_keys: bool = False) -> object:
     with path.open("rb") as source:
         encoded = source.read(MAX_JSON_BYTES + 1)
     if len(encoded) > MAX_JSON_BYTES:
         raise ValueError(f"JSON input exceeds {MAX_JSON_BYTES} bytes.")
-    return json.loads(encoded.decode("utf-8-sig"), parse_float=decimal.Decimal)
+    try:
+        return json.loads(
+            encoded.decode("utf-8-sig"), parse_float=decimal.Decimal,
+            object_pairs_hook=_unique_json_object if unique_keys else None)
+    except RecursionError as error:
+        raise ValueError("JSON input is nested too deeply.") from error
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -50,11 +64,15 @@ def main(argv: list[str] | None = None) -> int:
     benchmark_parser.add_argument("manifest", type=pathlib.Path)
     review_parser = subparsers.add_parser(
         "review-draft", help="Prepare a pronunciation review for one phrase.")
-    review_parser.add_argument("manifest", type=pathlib.Path)
-    review_parser.add_argument("item_id")
-    review_parser.add_argument("lexicon", type=pathlib.Path)
-    review_parser.add_argument("--source-label", required=True)
-    review_parser.add_argument("--data-license", required=True)
+    check_parser = subparsers.add_parser(
+        "review-check", help="Check an edited pronunciation review.")
+    for parser_for_review in (review_parser, check_parser):
+        parser_for_review.add_argument("manifest", type=pathlib.Path)
+        parser_for_review.add_argument("item_id")
+        parser_for_review.add_argument("lexicon", type=pathlib.Path)
+        parser_for_review.add_argument("--source-label", required=True)
+        parser_for_review.add_argument("--data-license", required=True)
+    check_parser.add_argument("review", type=pathlib.Path)
     listening_parser = subparsers.add_parser(
         "listening", help="Prepare a new local randomized listening packet.")
     listening_parser.add_argument("manifest", type=pathlib.Path)
@@ -82,8 +100,8 @@ def main(argv: list[str] | None = None) -> int:
     soulx_parser.add_argument("--sample-rate", type=int, default=24000)
     soulx_parser.add_argument("--hop-size", type=int, default=480)
     for subparser in (text_parser, lexicon_parser, audit_parser, benchmark_parser,
-                      review_parser, responses_parser, voicing_parser,
-                      soulx_parser):
+                      review_parser, check_parser, responses_parser,
+                      voicing_parser, soulx_parser):
         subparser.add_argument("--output", type=pathlib.Path,
                                help="Create a new JSON report; refuse overwrite.")
     args = parser.parse_args(argv)
@@ -103,6 +121,11 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "review-draft":
             result = review_draft.prepare_draft(
                 _load_json(args.manifest), args.item_id, args.lexicon,
+                source_label=args.source_label, data_license=args.data_license)
+        elif args.command == "review-check":
+            result = review_draft.check_draft(
+                _load_json(args.manifest), args.item_id, args.lexicon,
+                _load_json(args.review, unique_keys=True),
                 source_label=args.source_label, data_license=args.data_license)
         elif args.command == "listening":
             result = listening.prepare_packet(
