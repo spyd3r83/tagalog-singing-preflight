@@ -173,6 +173,41 @@ An approved review with every decision present returns the selected or supplied 
 
 Success exits with code 0. Invalid records, duplicate fields in the edited JSON, or file errors exit with code 2. Inputs are read-only and optional `--output` creates a new file.
 
+## Map reviewed IPA to declared model tokens
+
+Use `phone-map` to apply a caller-supplied mapping profile to one complete review marked `approved`. The command first checks the review against its original manifest and lexicon. It then maps each IPA token explicitly and checks every profile target against the supplied model vocabulary. The output preserves word order, IPA spellings, original text, and Unicode offsets.
+
+Run the original synthetic demonstration from a checkout:
+
+```sh
+python examples/make_phone_mapping_demo.py ../tagalog-mapping-demo
+python -m tagalog_singing_preflight phone-map data/tagalog-benchmark-v1.json dev-05 examples/lexicon-demo.tsv ../tagalog-mapping-demo/review.json ../tagalog-mapping-demo/mapping.json ../tagalog-mapping-demo/vocabulary.json --source-label synthetic-demo --data-license MIT
+```
+
+The generator creates a new directory containing generated mock decisions, an invented mapping profile, and an invented vocabulary. Its six occurrences each receive the same two synthetic IPA labels. The mapping expands them to 18 target tokens in total. This demonstrates the adapter mechanics. Native Tagalog review and singing quality remain unassessed.
+
+A profile contains exactly these four fields:
+
+```json
+{
+  "schema_version": 1,
+  "mapping_id": "synthetic-demo",
+  "target_model": "synthetic-token-model-v1",
+  "rules": {
+    "ˈdemo": ["T_STRESS", "T_DEMO"],
+    "ʔ": ["T_GLOTTAL"]
+  }
+}
+```
+
+Rules match the exact Unicode spelling and case of an entire IPA token. Stress marks attached to a token and glottal symbols therefore need explicit rules. Canonically equivalent spellings also require their exact supplied keys. Each rule must emit at least one token. A missing rule, empty expansion, unsupported target, stale review, or incomplete approval causes an error. All profile rules are checked, including unused rules.
+
+The vocabulary is a JSON list of single tokens from the receiving frontend. For example, the synthetic vocabulary contains `["T_STRESS", "T_DEMO", "T_GLOTTAL"]`. `target_model` records the caller's model/version label. Vocabulary membership and that label leave checkpoint compatibility and linguistic equivalence unverified. Keep the profile and its applicable terms with the source review. Reports include the phrase and mapped tokens, so preserve any restrictions on those inputs when sharing results.
+
+Limits are 10,000 rules, 1,024 characters per source token, 16 targets per rule, 256 characters per target token, and 100,000 expanded tokens per report. Tokens must be nonempty and contain no whitespace or controls. Mapping ID and target-model labels allow up to 512 characters. The CLI accepts up to 32 MiB per JSON input and rejects duplicate fields in the review or mapping profile. Success exits with code 0. Invalid records and file errors exit with code 2. Optional `--output` creates a new report, and source files are read without modification.
+
+The Python entry point is `phone_mapping.map_review(manifest, item_id, lexicon_path, edited_review, mapping, vocabulary, source_label=..., data_license=...)`. Its per-occurrence target lists are an input to further alignment work. Native SoulX processing uses per-note phone groups and additional timing metadata. A model adapter must provide the syllable-to-note alignment and native formatting for its receiving frontend. [Pinned SoulX processor](https://github.com/Soul-AILab/SoulX-Singer/blob/81aeb3ae772c70093c3de74dc23c92d983801ae4/soulxsinger/utils/data_processor.py)
+
 ## Prepare a local listening comparison
 
 The `listening` command prepares randomized A/B trials from two sets of supplied WAV clips. It creates anonymous filenames and a blank response sheet, with the condition mapping kept outside the listener folder. It does not synthesize audio, recruit listeners, or evaluate their responses.
@@ -230,7 +265,7 @@ The regression suite covers Unicode preservation, unknown tokens, frame allocati
 
 A private integration check found a 7.50-second input becoming 374 rather than 375 frames under binary-float sum/floor. The allocator returned 375. A separate check found 159 voicing-mask differences across 475 frames, despite equal pitch values on all 172 jointly voiced frames. These results demonstrate metadata diagnostics, not improved audio or native-language correctness. Private source material is not included.
 
-Supported here: text preservation, declared-vocabulary checks, timing allocation/audit, aligned voicing-mask comparison, the documented native SoulX metadata audit, supplied pronunciation lookup, benchmark validation, development review drafts and checks, local randomized listening-packet preparation, and descriptive response tallies. Applying corrected inputs through a model runtime remains experimental. Not implemented: automatic G2P/IPA, stress prediction, model-language expansion, training, synthesis, conversion, audio repair, or statistical analysis of listener populations.
+Supported here: text preservation, declared-vocabulary checks, timing allocation/audit, aligned voicing-mask comparison, the documented native SoulX metadata audit, supplied pronunciation lookup and explicit token mapping, benchmark validation, development review drafts and checks, local randomized listening-packet preparation, and descriptive response tallies. Applying corrected inputs through a model runtime remains experimental. Not implemented: automatic G2P/IPA, stress prediction, model-language expansion, training, synthesis, conversion, audio repair, or statistical analysis of listener populations.
 
 ## Resource catalog and contributions
 

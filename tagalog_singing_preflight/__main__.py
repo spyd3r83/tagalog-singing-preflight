@@ -12,6 +12,7 @@ from tagalog_singing_preflight import audit
 from tagalog_singing_preflight import benchmark
 from tagalog_singing_preflight import lexicon
 from tagalog_singing_preflight import listening
+from tagalog_singing_preflight import phone_mapping
 from tagalog_singing_preflight import responses
 from tagalog_singing_preflight import review_draft
 from tagalog_singing_preflight import soulx
@@ -26,7 +27,7 @@ def _unique_json_object(pairs: list[tuple[str, object]]) -> dict:
     result = {}
     for key, value in pairs:
         if key in result:
-            raise ValueError("Review JSON contains a duplicate object member.")
+            raise ValueError("JSON input contains a duplicate object member.")
         result[key] = value
     return result
 
@@ -66,13 +67,18 @@ def main(argv: list[str] | None = None) -> int:
         "review-draft", help="Prepare a pronunciation review for one phrase.")
     check_parser = subparsers.add_parser(
         "review-check", help="Check an edited pronunciation review.")
-    for parser_for_review in (review_parser, check_parser):
+    mapping_parser = subparsers.add_parser(
+        "phone-map", help="Apply explicit rules to a checked review.")
+    for parser_for_review in (review_parser, check_parser, mapping_parser):
         parser_for_review.add_argument("manifest", type=pathlib.Path)
         parser_for_review.add_argument("item_id")
         parser_for_review.add_argument("lexicon", type=pathlib.Path)
         parser_for_review.add_argument("--source-label", required=True)
         parser_for_review.add_argument("--data-license", required=True)
     check_parser.add_argument("review", type=pathlib.Path)
+    mapping_parser.add_argument("review", type=pathlib.Path)
+    mapping_parser.add_argument("mapping", type=pathlib.Path)
+    mapping_parser.add_argument("vocabulary", type=pathlib.Path)
     listening_parser = subparsers.add_parser(
         "listening", help="Prepare a new local randomized listening packet.")
     listening_parser.add_argument("manifest", type=pathlib.Path)
@@ -100,8 +106,8 @@ def main(argv: list[str] | None = None) -> int:
     soulx_parser.add_argument("--sample-rate", type=int, default=24000)
     soulx_parser.add_argument("--hop-size", type=int, default=480)
     for subparser in (text_parser, lexicon_parser, audit_parser, benchmark_parser,
-                      review_parser, check_parser, responses_parser,
-                      voicing_parser, soulx_parser):
+                      review_parser, check_parser, mapping_parser,
+                      responses_parser, voicing_parser, soulx_parser):
         subparser.add_argument("--output", type=pathlib.Path,
                                help="Create a new JSON report; refuse overwrite.")
     args = parser.parse_args(argv)
@@ -126,6 +132,13 @@ def main(argv: list[str] | None = None) -> int:
             result = review_draft.check_draft(
                 _load_json(args.manifest), args.item_id, args.lexicon,
                 _load_json(args.review, unique_keys=True),
+                source_label=args.source_label, data_license=args.data_license)
+        elif args.command == "phone-map":
+            result = phone_mapping.map_review(
+                _load_json(args.manifest), args.item_id, args.lexicon,
+                _load_json(args.review, unique_keys=True),
+                _load_json(args.mapping, unique_keys=True),
+                _load_json(args.vocabulary),
                 source_label=args.source_label, data_license=args.data_license)
         elif args.command == "listening":
             result = listening.prepare_packet(
