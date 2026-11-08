@@ -27,6 +27,8 @@ jobs:
       - run: python -m tagalog_singing_preflight review-draft data/tagalog-benchmark-v1.json dev-05 examples/lexicon-demo.tsv --source-label synthetic-demo --data-license MIT
       - run: python examples/make_phone_mapping_demo.py mapping-demo
       - run: python -m tagalog_singing_preflight phone-map data/tagalog-benchmark-v1.json dev-05 examples/lexicon-demo.tsv mapping-demo/review.json mapping-demo/mapping.json mapping-demo/vocabulary.json --source-label synthetic-demo --data-license MIT
+      - run: python examples/make_phone_mapping_demo.py native-note-demo --native-notes
+      - run: python -m tagalog_singing_preflight soulx-export data/tagalog-benchmark-v1.json dev-05 examples/lexicon-demo.tsv native-note-demo/review.json native-note-demo/mapping.json native-note-demo/vocabulary.json native-note-demo/note-plan.json --source-label synthetic-demo --data-license MIT --expected-frames 150
       - run: python examples/make_listening_demo.py listening-demo
       - run: python -m tagalog_singing_preflight listening data/tagalog-benchmark-v1.json listening-demo/plan.json listening-demo/packet --seed 17
       - run: python examples/make_listening_demo.py listening-demo/synthetic-responses.csv --responses-for listening-demo/packet
