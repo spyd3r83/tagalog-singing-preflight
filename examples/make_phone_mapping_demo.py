@@ -13,9 +13,11 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 
 def main() -> None:
-    """Create a new directory containing three synthetic JSON fixtures."""
+    """Create synthetic mapping fixtures, optionally with native note spans."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("destination", type=pathlib.Path)
+    parser.add_argument("--native-notes", action="store_true",
+                        help="Use illustrative en_ tokens and a note plan.")
     args = parser.parse_args()
     draft = subprocess.run(
         [sys.executable, "-m", "tagalog_singing_preflight", "review-draft",
@@ -39,6 +41,19 @@ def main() -> None:
         "review.json": review, "mapping.json": mapping,
         "vocabulary.json": ["T_STRESS", "T_DEMO", "T_GLOTTAL"],
     }
+    if args.native_notes:
+        mapping["target_model"] = "soulx-synthetic-contract-v1"
+        mapping["rules"] = {"ˈdemo": ["en_S", "en_AH0"], "ʔ": ["en_B"]}
+        fixtures["vocabulary.json"] = json.loads(
+            (ROOT / "examples/soulx-example-phoneset.json").read_text("utf-8"))
+        fixtures["note-plan.json"] = {
+            "schema_version": 1,
+            "notes": [
+                {"occurrence_index": index, "token_start": 0, "token_end": 3,
+                 "duration": "0.5", "note_pitch": 60, "note_type": 2}
+                for index in range(len(review["occurrences"]))
+            ],
+        }
     args.destination.mkdir()
     for filename, value in fixtures.items():
         with (args.destination / filename).open(

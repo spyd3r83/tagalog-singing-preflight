@@ -16,6 +16,7 @@ from tagalog_singing_preflight import phone_mapping
 from tagalog_singing_preflight import responses
 from tagalog_singing_preflight import review_draft
 from tagalog_singing_preflight import soulx
+from tagalog_singing_preflight import soulx_export
 from tagalog_singing_preflight import text
 from tagalog_singing_preflight import voicing
 
@@ -69,16 +70,24 @@ def main(argv: list[str] | None = None) -> int:
         "review-check", help="Check an edited pronunciation review.")
     mapping_parser = subparsers.add_parser(
         "phone-map", help="Apply explicit rules to a checked review.")
-    for parser_for_review in (review_parser, check_parser, mapping_parser):
+    export_parser = subparsers.add_parser(
+        "soulx-export", help="Export checked tokens through explicit note spans.")
+    for parser_for_review in (review_parser, check_parser, mapping_parser,
+                              export_parser):
         parser_for_review.add_argument("manifest", type=pathlib.Path)
         parser_for_review.add_argument("item_id")
         parser_for_review.add_argument("lexicon", type=pathlib.Path)
         parser_for_review.add_argument("--source-label", required=True)
         parser_for_review.add_argument("--data-license", required=True)
     check_parser.add_argument("review", type=pathlib.Path)
-    mapping_parser.add_argument("review", type=pathlib.Path)
-    mapping_parser.add_argument("mapping", type=pathlib.Path)
-    mapping_parser.add_argument("vocabulary", type=pathlib.Path)
+    for mapped_parser in (mapping_parser, export_parser):
+        mapped_parser.add_argument("review", type=pathlib.Path)
+        mapped_parser.add_argument("mapping", type=pathlib.Path)
+        mapped_parser.add_argument("vocabulary", type=pathlib.Path)
+    export_parser.add_argument("note_plan", type=pathlib.Path)
+    export_parser.add_argument("--expected-frames", type=int, required=True)
+    export_parser.add_argument("--sample-rate", type=int, default=24000)
+    export_parser.add_argument("--hop-size", type=int, default=480)
     listening_parser = subparsers.add_parser(
         "listening", help="Prepare a new local randomized listening packet.")
     listening_parser.add_argument("manifest", type=pathlib.Path)
@@ -106,7 +115,7 @@ def main(argv: list[str] | None = None) -> int:
     soulx_parser.add_argument("--sample-rate", type=int, default=24000)
     soulx_parser.add_argument("--hop-size", type=int, default=480)
     for subparser in (text_parser, lexicon_parser, audit_parser, benchmark_parser,
-                      review_parser, check_parser, mapping_parser,
+                      review_parser, check_parser, mapping_parser, export_parser,
                       responses_parser, voicing_parser, soulx_parser):
         subparser.add_argument("--output", type=pathlib.Path,
                                help="Create a new JSON report; refuse overwrite.")
@@ -140,6 +149,16 @@ def main(argv: list[str] | None = None) -> int:
                 _load_json(args.mapping, unique_keys=True),
                 _load_json(args.vocabulary),
                 source_label=args.source_label, data_license=args.data_license)
+        elif args.command == "soulx-export":
+            result = soulx_export.export_review(
+                _load_json(args.manifest), args.item_id, args.lexicon,
+                _load_json(args.review, unique_keys=True),
+                _load_json(args.mapping, unique_keys=True),
+                _load_json(args.vocabulary),
+                _load_json(args.note_plan, unique_keys=True),
+                source_label=args.source_label, data_license=args.data_license,
+                expected_frames=args.expected_frames,
+                sample_rate=args.sample_rate, hop_size=args.hop_size)
         elif args.command == "listening":
             result = listening.prepare_packet(
                 _load_json(args.manifest), _load_json(args.plan),

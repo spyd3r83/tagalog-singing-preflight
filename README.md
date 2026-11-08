@@ -206,7 +206,48 @@ The vocabulary is a JSON list of single tokens from the receiving frontend. For 
 
 Limits are 10,000 rules, 1,024 characters per source token, 16 targets per rule, 256 characters per target token, and 100,000 expanded tokens per report. Tokens must be nonempty and contain no whitespace or controls. Mapping ID and target-model labels allow up to 512 characters. The CLI accepts up to 32 MiB per JSON input and rejects duplicate fields in the review or mapping profile. Success exits with code 0. Invalid records and file errors exit with code 2. Optional `--output` creates a new report, and source files are read without modification.
 
-The Python entry point is `phone_mapping.map_review(manifest, item_id, lexicon_path, edited_review, mapping, vocabulary, source_label=..., data_license=...)`. Its per-occurrence target lists are an input to further alignment work. Native SoulX processing uses per-note phone groups and additional timing metadata. A model adapter must provide the syllable-to-note alignment and native formatting for its receiving frontend. [Pinned SoulX processor](https://github.com/Soul-AILab/SoulX-Singer/blob/81aeb3ae772c70093c3de74dc23c92d983801ae4/soulxsinger/utils/data_processor.py)
+The Python entry point is `phone_mapping.map_review(manifest, item_id, lexicon_path, edited_review, mapping, vocabulary, source_label=..., data_license=...)`. Its per-occurrence target lists can feed the explicit note-plan exporter below. A usable linguistic mapping and syllable-to-note alignment still require separate evidence for the receiving frontend.
+
+## Export mapped tokens with a note plan
+
+Use `soulx-export` to turn an explicit token-to-note plan into native SoulX metadata. It repeats the original review and mapping checks, then requires every mapped target token to appear exactly once in order. The command accepts the original source inputs, rather than trusting a standalone mapping report.
+
+Run the original synthetic demonstration in a new directory:
+
+```sh
+python examples/make_phone_mapping_demo.py ../tagalog-native-demo --native-notes
+python -m tagalog_singing_preflight soulx-export data/tagalog-benchmark-v1.json dev-05 examples/lexicon-demo.tsv ../tagalog-native-demo/review.json ../tagalog-native-demo/mapping.json ../tagalog-native-demo/vocabulary.json ../tagalog-native-demo/note-plan.json --source-label synthetic-demo --data-license MIT --expected-frames 150
+```
+
+This variant creates mock review decisions, an illustrative English-token mapping and phoneset, and `note-plan.json`. Each of six occurrences maps to `["en_S", "en_AH0", "en_B"]` and receives one 0.5-second note. The report's `metadata.phoneme` contains six `en_S-AH0-B` groups. Its three seconds produce 150 frames at the default 24,000 Hz sample rate and 480-sample hop. These invented labels do not pronounce the Tagalog phrase.
+
+A note plan contains exactly `schema_version` (integer 1) and a nonempty `notes` list. For example, its first record is:
+
+```json
+{
+  "schema_version": 1,
+  "notes": [
+    {
+      "occurrence_index": 0,
+      "token_start": 0,
+      "token_end": 3,
+      "duration": "0.5",
+      "note_pitch": 60,
+      "note_type": 2
+    }
+  ]
+}
+```
+
+The demonstration's complete plan also contains occurrences 1 through 5. Each record has exactly those six fields. Occurrence indices are zero-based, and `[token_start, token_end)` selects a nonempty span in that occurrence's mapped `target_tokens`. Notes must cover every occurrence contiguously and in order, without gaps, overlap, duplication, or omitted final tokens. One occurrence may be split across successive notes. The caller supplies this alignment; automatic syllable detection, rests, and repeated-token melisma are outside this slice.
+
+Durations are positive decimal strings in seconds. Pitch and type are integers from 0 through 255, matching the pinned native embedding bounds; the range alone does not establish musically meaningful settings. A note can contain one target token directly, or multiple `en_` tokens whose nonempty suffixes contain no hyphens. The latter serialize as `en_A-B` and expand to the supplied tokens plus native `<SEP>`. Mixed or non-English multi-token groups, ambiguous `en_` tokens, and content targets `<PAD>`, `<BOW>`, `<EOW>`, `<SEP>`, `<SP>`, or `<AP>` are refused. Native `<AP>` substitution within a token is also refused.
+
+Before returning metadata, the exporter runs the [pinned SoulX audit](#check-native-soulx-metadata) with the required `--expected-frames` and optional `--sample-rate` and `--hop-size`. That audit checks the expanded vocabulary, including inserted structural tokens, frame totals, and native pre-assignment capacity. Audit failure refuses the export and includes its error codes. No F0 is inferred or supplied. The [pinned processor](https://github.com/Soul-AILab/SoulX-Singer/blob/81aeb3ae772c70093c3de74dc23c92d983801ae4/soulxsinger/utils/data_processor.py) accepts absent F0; melody control still needs runtime and audio evidence.
+
+The report includes the native `metadata` object (`text`, `phoneme`, `duration`, `note_pitch`, `note_type`), original note assignments, the audit, and its upstream commit. Extract `metadata` for a native consumer; the report itself is not the native input object. `native_processor_executed`, `model_runtime_verified`, `pronunciation_assessed`, and `native_review_verified` remain `false`. A pass establishes these source-derived mechanical checks, without executing tensor processing, a checkpoint, or audio evaluation.
+
+The Python entry point is `soulx_export.export_review(manifest, item_id, lexicon_path, edited_review, mapping, vocabulary, note_plan, source_label=..., data_license=..., expected_frames=..., sample_rate=24000, hop_size=480)`. Plans allow up to 100,000 notes; the existing mapping and numeric bounds also apply. The CLI rejects duplicate note-plan fields and accepts up to 32 MiB per JSON input. Success exits with code 0; invalid records, native audit failures, and file errors exit with code 2. Inputs remain unchanged. Optional `--output` creates a new report and refuses overwrite.
 
 ## Prepare a local listening comparison
 
@@ -265,7 +306,7 @@ The regression suite covers Unicode preservation, unknown tokens, frame allocati
 
 A private integration check found a 7.50-second input becoming 374 rather than 375 frames under binary-float sum/floor. The allocator returned 375. A separate check found 159 voicing-mask differences across 475 frames, despite equal pitch values on all 172 jointly voiced frames. These results demonstrate metadata diagnostics, not improved audio or native-language correctness. Private source material is not included.
 
-Supported here: text preservation, declared-vocabulary checks, timing allocation/audit, aligned voicing-mask comparison, the documented native SoulX metadata audit, supplied pronunciation lookup and explicit token mapping, benchmark validation, development review drafts and checks, local randomized listening-packet preparation, and descriptive response tallies. Applying corrected inputs through a model runtime remains experimental. Not implemented: automatic G2P/IPA, stress prediction, model-language expansion, training, synthesis, conversion, audio repair, or statistical analysis of listener populations.
+Supported here: text preservation, declared-vocabulary checks, timing allocation/audit, aligned voicing-mask comparison, the documented native SoulX metadata audit, supplied pronunciation lookup, explicit token mapping and content-note export, benchmark validation, development review drafts and checks, local randomized listening-packet preparation, and descriptive response tallies. Applying corrected inputs through a model runtime remains experimental. Not implemented: automatic G2P/IPA, stress prediction, model-language expansion, training, synthesis, conversion, audio repair, or statistical analysis of listener populations.
 
 ## Resource catalog and contributions
 
