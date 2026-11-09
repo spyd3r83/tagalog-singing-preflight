@@ -216,7 +216,7 @@ Run the original synthetic demonstration in a new directory:
 
 ```sh
 python examples/make_phone_mapping_demo.py ../tagalog-native-demo --native-notes
-python -m tagalog_singing_preflight soulx-export data/tagalog-benchmark-v1.json dev-05 examples/lexicon-demo.tsv ../tagalog-native-demo/review.json ../tagalog-native-demo/mapping.json ../tagalog-native-demo/vocabulary.json ../tagalog-native-demo/note-plan.json --source-label synthetic-demo --data-license MIT --expected-frames 150
+python -m tagalog_singing_preflight soulx-export data/tagalog-benchmark-v1.json dev-05 examples/lexicon-demo.tsv ../tagalog-native-demo/review.json ../tagalog-native-demo/mapping.json ../tagalog-native-demo/vocabulary.json ../tagalog-native-demo/note-plan.json --source-label synthetic-demo --data-license MIT --expected-frames 150 --output ../tagalog-native-demo/export.json
 ```
 
 This variant creates mock review decisions, an illustrative English-token mapping and phoneset, and `note-plan.json`. Each of six occurrences maps to `["en_S", "en_AH0", "en_B"]` and receives one 0.5-second note. The report's `metadata.phoneme` contains six `en_S-AH0-B` groups. Its three seconds produce 150 frames at the default 24,000 Hz sample rate and 480-sample hop. These invented labels do not pronounce the Tagalog phrase.
@@ -248,6 +248,22 @@ Before returning metadata, the exporter runs the [pinned SoulX audit](#check-nat
 The report includes the native `metadata` object (`text`, `phoneme`, `duration`, `note_pitch`, `note_type`), original note assignments, the audit, and its upstream commit. Extract `metadata` for a native consumer; the report itself is not the native input object. `native_processor_executed`, `model_runtime_verified`, `pronunciation_assessed`, and `native_review_verified` remain `false`. A pass establishes these source-derived mechanical checks, without executing tensor processing, a checkpoint, or audio evaluation.
 
 The Python entry point is `soulx_export.export_review(manifest, item_id, lexicon_path, edited_review, mapping, vocabulary, note_plan, source_label=..., data_license=..., expected_frames=..., sample_rate=24000, hop_size=480)`. Plans allow up to 100,000 notes; the existing mapping and numeric bounds also apply. The CLI rejects duplicate note-plan fields and accepts up to 32 MiB per JSON input. Success exits with code 0; invalid records, native audit failures, and file errors exit with code 2. Inputs remain unchanged. Optional `--output` creates a new report and refuses overwrite.
+
+### Compare with the native processor on CPU
+
+The optional checkout example runs that saved export through the actual pinned `DataProcessor`, then compares retained phone IDs and tokens, note pitch and type, and the alignment frame count. Use an existing trusted SoulX checkout at the [pinned revision](https://github.com/Soul-AILab/SoulX-Singer/tree/81aeb3ae772c70093c3de74dc23c92d983801ae4) and a Python environment with its required PyTorch, NumPy, and torchaudio libraries already installed. Replace `/path/to/SoulX-Singer` with that checkout's root:
+
+```sh
+python -m examples.compare_soulx_cpu ../tagalog-native-demo/export.json ../tagalog-native-demo/vocabulary.json --upstream /path/to/SoulX-Singer --expected-frames 150 --output ../tagalog-native-demo/native-comparison.json
+```
+
+The runner verifies `data_processor.py` against SHA-256 `14baf4c7784cea85bd58f0c29bd504d3ae46809931c0d40b16183a39581290cb` before importing it. Other checkout files and installed dependencies are caller-supplied and must also be trusted. The runner imports the native libraries, forces processor tensors to CPU, disables bytecode writes during upstream imports, and passes a copied metadata object without a WAV path. It downloads nothing, loads no weights, and invokes no model or audio generation. The package's ordinary runtime and regression suite retain no tensor dependency.
+
+On 9 November 2026, the synthetic six-note export retained all 37 expected phone positions, including structural tokens, and all note pitch/type values. Its CPU alignment contained 150 frames: 132 had positive indices and 18 had index zero. The observed environment was Python 3.11.9, PyTorch and torchaudio 2.6.0+cu124, and NumPy 1.26.4. The CUDA-built libraries still executed this processor on CPU.
+
+A comparison pass covers the listed field, index-bound, and clock checks. The report includes the retained arrays and `zero_index_frames`; zero slots do not fail this bounded comparison or establish correct assignment. `alignment_assignment_verified`, `model_runtime_verified`, `pronunciation_assessed`, and `native_review_verified` remain `false`. The comparison records `native_processor_executed: true` separately from the unchanged export report. Native tensor preprocessing is now observed for this synthetic case; complete alignment, checkpoint behavior, Tagalog pronunciation, and musical quality remain unassessed.
+
+The comparison reruns the metadata audit and supports exported content notes without F0, using the same default clocks as `soulx-export`. Optional clock flags are `--sample-rate` and `--hop-size`. Inputs remain unchanged, and `--output` refuses overwrite. Exit codes are 0 for matching compared fields, 1 for a native-result difference, and 2 for invalid inputs, a changed processor source, missing native dependencies, or file/runtime errors. Ordinary CI tests the comparison and refusal behavior with synthetic list results; the actual upstream execution is an optional local integration check.
 
 ## Prepare a local listening comparison
 
